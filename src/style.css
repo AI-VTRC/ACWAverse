@@ -1,0 +1,198 @@
+body {
+    font-family: 'Inter', sans-serif;
+}
+.tab-content {
+    display: none;
+}
+.tab-content.active {
+    display: block;
+}
+.tab-button.active {
+    border-bottom: 2px solid #3b82f6;
+    color: #3b82f6;
+}
+.tab-button:disabled {
+    color: #9ca3af;
+    cursor: not-allowed;
+}
+#network-visualizer-container {
+    position: relative;
+    background-color: #f3f4f6;
+    border-radius: 0.5rem;
+    border: 1px solid #d1d5db;
+    overflow: auto;
+    min-height: 500px;
+}
+
+#network-visualizer-content {
+    position: relative;
+    min-width: 100%;
+    min-height: 100%;
+    padding: 5px;
+    width: max-content;
+    height: max-content;
+    transform-origin: top left;
+}
+
+.component-node {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 9px;
+    cursor: pointer;
+    border: 2px solid #374151;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+.component-node:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+    z-index: 10;
+}
+
+.component-node.source { 
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    border-color: #1e40af;
+}
+.component-node.pump { 
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border-color: #b45309;
+}
+.component-node.valve { 
+    background: linear-gradient(135deg, #eab308, #ca8a04);
+    border-color: #a16207;
+}
+.component-node.junction { 
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    border-color: #374151;
+}
+.component-node.tank { 
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-color: #047857;
+}
+.component-node.sink { 
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    border-color: #b91c1c;
+}
+
+.pipe-line {
+    position: absolute;
+    height: 3px;
+    background: linear-gradient(90deg, #374151, #6b7280);
+    transform-origin: left center;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.pipe-arrow {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 10px solid #374151;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    transform-origin: left center;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
+}
+
+.connectivity-matrix {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 12px;
+}
+
+.connectivity-matrix th,
+.connectivity-matrix td {
+    border: 1px solid #d1d5db;
+    padding: 8px;
+    text-align: center;
+    min-width: 40px;
+}
+
+.connectivity-matrix th {
+    background-color: #f9fafb;
+    font-weight: bold;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.connectivity-matrix th:first-child {
+    position: sticky;
+    left: 0;
+    background-color: #f9fafb;
+    z-index: 20;
+}
+
+.connectivity-matrix td:first-child {
+    position: sticky;
+    left: 0;
+    background-color: #f9fafb;
+    font-weight: bold;
+    z-index: 10;
+}
+
+.connectivity-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.connectivity-checkbox:checked {
+    accent-color: #3b82f6;
+}
+
+.component-type-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: bold;
+    color: white;
+    text-transform: uppercase;
+}
+
+.badge-source { background-color: #3b82f6; }
+.badge-pump { background-color: #f59e0b; }
+.badge-valve { background-color: #eab308; }
+.badge-junction { background-color: #6b7280; }
+.badge-tank { background-color: #10b981; }
+.badge-sink { background-color: #ef4444; }
+.label {
+    color: #1f2937;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    padding: 2px 5px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 4px;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    border: 1px solid rgba(0,0,0,0.1);
+}
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 50;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+}
+.modal-content {
+    background-color: #fefefe;
+    margin: 10% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 700px;
+    border-radius: 0.5rem;
+}

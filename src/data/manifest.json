@@ -1,0 +1,10 @@
+{
+  "samples": [
+    { "file": "four_tank_timed.json", "name": "4-Tank Timed Loop" },
+    { "file": "four_tank_conditional.json", "name": "4-Tank Conditional Loop" },
+    { "file": "muleshoe.json", "name": "Muleshoe Water System" },
+    { "file": "acwa_line.json", "name": "ACWA Line" },
+    { "file": "acwa_bus.json", "name": "ACWA Bus" },
+    { "file": "acwa_star.json", "name": "ACWA Star" }
+  ]
+}

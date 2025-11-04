@@ -1,0 +1,351 @@
+{
+    "name": "Muleshoe Water System",
+    "network": {
+        "components": [
+            {
+                "id": "well_source",
+                "type": "source",
+                "maxFlowRate": 1232.028,
+                "temperature": 15,
+                "ph": 7.2,
+                "o2": 9,
+                "bodn": 1,
+                "nitrate": 0.5,
+                "co2": 4,
+                "position": {
+                    "x": -20,
+                    "y": 10,
+                    "z": 0
+                }
+            },
+            {
+                "id": "ground_tank_1",
+                "type": "tank",
+                "shape": "cylindrical",
+                "radius": 1.5,
+                "maxLevel": 50,
+                "waterLevel": 24.1,
+                "temperature": 18,
+                "ph": 7.1,
+                "o2": 8.5,
+                "bodn": 1.2,
+                "nitrate": 0.6,
+                "co2": 4.5,
+                "position": {
+                    "x": -10,
+                    "y": 15,
+                    "z": 0
+                }
+            },
+            {
+                "id": "ground_tank_2",
+                "type": "tank",
+                "shape": "cylindrical",
+                "radius": 1.5,
+                "maxLevel": 50,
+                "waterLevel": 20.9,
+                "temperature": 18,
+                "ph": 7.1,
+                "o2": 8.5,
+                "bodn": 1.2,
+                "nitrate": 0.6,
+                "co2": 4.5,
+                "position": {
+                    "x": -10,
+                    "y": 5,
+                    "z": 0
+                }
+            },
+            {
+                "id": "well_junction",
+                "type": "junction",
+                "position": {
+                    "x": -15,
+                    "y": 10,
+                    "z": 0
+                }
+            },
+            {
+                "id": "storage_junction",
+                "type": "junction",
+                "position": {
+                    "x": -5,
+                    "y": 10,
+                    "z": 0
+                }
+            },
+            {
+                "id": "north_booster",
+                "type": "pump",
+                "maxFlowRate": 0.2,
+                "power": 0,
+                "temperature": 15,
+                "ph": 7.2,
+                "o2": 9,
+                "position": {
+                    "x": 0,
+                    "y": 15,
+                    "z": 0
+                }
+            },
+            {
+                "id": "middle_booster",
+                "type": "pump",
+                "maxFlowRate": 0.5,
+                "power": 100,
+                "temperature": 15,
+                "ph": 7.2,
+                "o2": 9,
+                "position": {
+                    "x": 0,
+                    "y": 10,
+                    "z": 0
+                }
+            },
+            {
+                "id": "south_booster",
+                "type": "pump",
+                "maxFlowRate": 0.3,
+                "power": 0,
+                "temperature": 15,
+                "ph": 7.2,
+                "o2": 9,
+                "position": {
+                    "x": 0,
+                    "y": 5,
+                    "z": 0
+                }
+            },
+            {
+                "id": "pump_junction",
+                "type": "junction",
+                "position": {
+                    "x": 5,
+                    "y": 10,
+                    "z": 0
+                }
+            },
+            {
+                "id": "water_tower",
+                "type": "tank",
+                "shape": "cylindrical",
+                "radius": 2,
+                "maxLevel": 150,
+                "waterLevel": 50,
+                "temperature": 18,
+                "ph": 7.1,
+                "o2": 8.5,
+                "bodn": 1.2,
+                "nitrate": 0.6,
+                "co2": 4.5,
+                "position": {
+                    "x": 15,
+                    "y": 10,
+                    "z": 0
+                }
+            },
+            {
+                "id": "distribution_sink",
+                "type": "sink",
+                "position": {
+                    "x": 25,
+                    "y": 10,
+                    "z": 0
+                }
+            }
+        ],
+        "pipes": [
+            {
+                "id": "pipe_well_junction",
+                "from": "well_source",
+                "to": "well_junction"
+            },
+            {
+                "id": "pipe_junction_tank1",
+                "from": "well_junction",
+                "to": "ground_tank_1"
+            },
+            {
+                "id": "pipe_junction_tank2",
+                "from": "well_junction",
+                "to": "ground_tank_2"
+            },
+            {
+                "id": "pipe_tank1_storage",
+                "from": "ground_tank_1",
+                "to": "storage_junction"
+            },
+            {
+                "id": "pipe_tank2_storage",
+                "from": "ground_tank_2",
+                "to": "storage_junction"
+            },
+            {
+                "id": "pipe_storage_north",
+                "from": "storage_junction",
+                "to": "north_booster"
+            },
+            {
+                "id": "pipe_storage_middle",
+                "from": "storage_junction",
+                "to": "middle_booster"
+            },
+            {
+                "id": "pipe_storage_south",
+                "from": "storage_junction",
+                "to": "south_booster"
+            },
+            {
+                "id": "pipe_north_pump_junction",
+                "from": "north_booster",
+                "to": "pump_junction"
+            },
+            {
+                "id": "pipe_middle_pump_junction",
+                "from": "middle_booster",
+                "to": "pump_junction"
+            },
+            {
+                "id": "pipe_south_pump_junction",
+                "from": "south_booster",
+                "to": "pump_junction"
+            },
+            {
+                "id": "pipe_pump_junction_tower",
+                "from": "pump_junction",
+                "to": "water_tower"
+            },
+            {
+                "id": "pipe_tower_distribution",
+                "from": "water_tower",
+                "to": "distribution_sink"
+            }
+        ]
+    },
+    "controlActions": [
+        {
+            "time": 0,
+            "componentId": "middle_booster",
+            "actionType": "set_pump_power",
+            "params": {
+                "power": "100"
+            }
+        },
+        {
+            "time": 0,
+            "componentId": "north_booster",
+            "actionType": "set_pump_power",
+            "params": {
+                "power": "0"
+            }
+        },
+        {
+            "time": 0,
+            "componentId": "south_booster",
+            "actionType": "set_pump_power",
+            "params": {
+                "power": "0"
+            }
+        }
+    ],
+    "conditionalActions": [
+        {
+            "source": {
+                "componentId": "water_tower",
+                "value": "waterLevel"
+            },
+            "condition": {
+                "operator": "<",
+                "threshold": 120
+            },
+            "target": {
+                "componentId": "middle_booster",
+                "actionType": "set_pump_power",
+                "params": {
+                    "power": "100"
+                }
+            }
+        },
+        {
+            "source": {
+                "componentId": "water_tower",
+                "value": "waterLevel"
+            },
+            "condition": {
+                "operator": ">",
+                "threshold": 140
+            },
+            "target": {
+                "componentId": "middle_booster",
+                "actionType": "set_pump_power",
+                "params": {
+                    "power": "0"
+                }
+            }
+        },
+        {
+            "source": {
+                "componentId": "middle_booster",
+                "value": "power"
+            },
+            "condition": {
+                "operator": "<",
+                "threshold": 50
+            },
+            "target": {
+                "componentId": "north_booster",
+                "actionType": "set_pump_power",
+                "params": {
+                    "power": "100"
+                }
+            }
+        },
+        {
+            "source": {
+                "componentId": "ground_tank_1",
+                "value": "waterLevel"
+            },
+            "condition": {
+                "operator": "<",
+                "threshold": 5
+            },
+            "target": {
+                "componentId": "middle_booster",
+                "actionType": "emergency_stop",
+                "params": {}
+            }
+        }
+    ],
+    "attackScenarios": [
+        {
+            "time": 100,
+            "type": "data_poisoning",
+            "componentId": "water_tower",
+            "poisonType": "waterLevel",
+            "value": 30,
+            "duration": 2700
+        },
+        {
+            "time": 100,
+            "type": "physical_damage",
+            "componentId": "middle_booster",
+            "damageType": "pump_failure"
+        },
+        {
+            "time": 150,
+            "type": "physical_damage",
+            "componentId": "north_booster",
+            "damageType": "pump_failure"
+        },
+        {
+            "time": 200,
+            "type": "physical_damage",
+            "componentId": "south_booster",
+            "damageType": "pump_failure"
+        }
+    ],
+    "simulationSettings": {
+        "duration": 4000,
+        "ambientTemp": 20
+    }
+}

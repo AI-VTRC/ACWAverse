@@ -1,0 +1,370 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\newcommand{\Eq}[1]{Equation~[\ref{#1}]}
+
+\title{ACWAverse: An Interactive Cyber-Physical Water System Simulator for Security and Attack Analysis}
+
+\author{\IEEEauthorblockN{1\textsuperscript{st} Mehmet Oguz Yardimci}
+\IEEEauthorblockA{\textit{Department of Computer Science} \\
+\textit{Virginia Tech}\\
+Arlington, VA USA\\
+oguzy@vt.edu}
+\and
+\IEEEauthorblockN{2\textsuperscript{nd} Feras A. Batarseh}
+\IEEEauthorblockA{\textit{Department of Biological Systems Engineering} \\
+\textit{Virginia Tech}\\
+Arlington, VA USA\\
+batarseh@vt.edu}
+}
+
+\maketitle
+
+\begin{abstract}
+This paper presents ACWAverse, a comprehensive cyber-physical water system simulator designed for cybersecurity research, attack analysis, and intelligent system development. Utilizing its hydraulic simulation engine module, ACWAverse integrates advanced hydraulic modeling, water quality simulation, and sophisticated cyber-attack scenarios to create a powerful platform for cyber-physical security analysis. The system introduces novel capabilities including integrated cyber-attack simulation with duration-based effects, real-time data poisoning that affects both conditional actions and system visualization, and comprehensive attack modeling covering data poisoning, chemical interference, and physical damage scenarios. Key contributions include a modular, 4-layer architecture supporting unlimited network complexities, advanced attack simulation frameworks for vulnerability assessment, and extensive dataset generation capabilities for training machine learning models on cyber-physical contexts. The platform serves as a digital twin environment for water infrastructure, enabling meta-learning approaches for attack detection and response strategies. Performance evaluations demonstrate efficient simulation capabilities with comprehensive data export functionality for research applications. ACWAverse addresses critical gaps in cyber-physical security research by providing a powerful tool for developing, testing, and validating intelligent water management solutions, cyber-resilience strategies, and machine learning models for critical infrastructure protection.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Cyber-physical systems, attacks simulation, digital twin, dataset generation, water systems security.
+\end{IEEEkeywords}
+
+\section{Introduction}
+
+Water Supply Systems (WSS) are cornerstones of modern society, yet they face unprecedented challenges in the 21st century, including escalating demand, aging infrastructure, and sophisticated cyber threats \cite{batarseh2023ai}. Addressing these requires intelligent water systems with advanced sensing, AI, and robust control, necessitating sophisticated modeling tools. High-profile incidents such as the 2021 Oldsmar, Florida water treatment cyberattack \cite{LALONE2024237}, in which an intruder attempted to adjust chemical dosing to dangerous levels via remote access, underscore the real-world risks of data poisoning and unauthorized control in water utilities \cite{cervini2022oldsmar,cisa2021oldsmar}.
+
+Beyond Oldsmar, similar incidents continue to surface, including the 2024 Muleshoe, Texas water system compromise, where attackers manipulated controls, causing a municipal water tank to overflow before operators shifted to manual operations\cite{apnews2024muleshoe}. Such events in Muleshoe and nearby towns reinforce that cyber-physical risks are neither hypothetical nor isolated, and they directly motivate research platforms like ACWAverse that can replicate data-poisoning and unauthorized-control scenarios to evaluate detection and response strategies.
+
+This work leverages the facilities of the ACWA Laboratory at Virginia Tech, including its instrumented physical testbed, PLC infrastructure, and curated datasets, which informed ACWAverse's requirements and provided ground truth for validation \cite{batarseh2023acwa}. The original ACWA project \cite{batarseh2023acwa} established a physical testbed for AI and cybersecurity experimentation, accompanied by a basic 2-tank digital twin simulator \cite{ACWA_data}. This simulator, while useful for validating physical results, was limited in scalability, modeling depth, and cyber scenario representation.
+
+This paper introduces ACWAverse, a next-generation cyber-physical security research platform overcoming these limitations. It is a comprehensive simulation environment that concurrently models physical water distribution (hydraulics, quality) and sophisticated cyber-attack scenarios, creating a powerful tool for cybersecurity research and intelligent system development. This holistic approach is vital for understanding system behavior under normal and adversarial conditions, enabling the development of robust defense mechanisms. Key contributions include scalable network modeling far beyond the original 2-tank limit, advanced cyber-attack simulation frameworks with duration-based effects and real-time data poisoning, comprehensive dataset generation capabilities for training machine learning models in cyber-physical security, digital twin functionality for water infrastructure, and meta-learning approaches for attack detection and response strategies. ACWAverse serves as a research platform for investigating intelligent algorithms, assessing vulnerabilities, developing cyber countermeasures, and training machine learning models for critical infrastructure protection.
+
+\section{Related Work}
+
+Effective simulation tools are crucial for advancing research in intelligent water systems and their security. This section reviews the original ACWA system's simulation component and compares ACWAverse with other tools.
+
+\subsection{Original ACWA System's Simulator Analysis}
+The original ACWA testbed's simulator \cite{batarseh2023acwa} was a "software-based water digital twin" for its 2-tank system, primarily for validating physical experiments. Its limitations included significant scalability constraints due to the 2-tank design, preventing modeling of realistic networks. The simulation capabilities were basic, lacking advanced flow dynamics, comprehensive water quality kinetics for larger systems, and the means to simulate operational changes or cyber-attacks. Visualization was confined to basic dashboards, and its utility as a general research tool was hampered by its tight coupling to the specific physical setup. Critically, it was not designed to model cyber-attack scenarios. ACWAverse is engineered to address these specific shortcomings through a modern web-based approach.
+
+\subsection{Comparative Analysis with Existing Testbeds and Simulators}
+Physical testbeds like WaterBox \cite{kartakis2015waterbox}, SWaT \cite{mathur2016swat}, and WADI \cite{ahmed2017wadi} offer invaluable hands-on environments but can be costly, inflexible, and they create limited number of scenarios. Software simulators like EPANET \cite{rossman2000epanet} are industry benchmarks for hydraulic and water quality modeling. ACWAverse, while using similar hydraulic principles, differentiates itself through its integrated cyber-attack simulation capabilities, comprehensive dataset generation for machine learning, and digital twin functionality. It offers advanced cyber-physical security research capabilities, enabling the development and testing of machine learning models for attack detection and response. Furthermore, its modular architecture is tailored for integrating and testing custom AI algorithms and control strategies, positioning it as a strong platform for cybersecurity research and machine learning model development. Table \ref{tab:comparison} provides a comparative overview, highlighting ACWAverse's focus on cyber-physical security research, machine learning applications, and digital twin capabilities.
+
+\begin{table*}[htbp]
+\caption{Comparison of Water System Testbeds and Simulators}
+\label{tab:comparison}
+\centering
+\small
+\begin{tabular}{|p{2.45cm}|p{2.7cm}|p{3.5cm}|p{3.5cm}|}
+\hline
+\textbf{Feature} & \textbf{Original ACWA \cite{batarseh2023acwa}} & \textbf{EPANET/Others \cite{rossman2000epanet}} & \textbf{ACWAverse} \\
+\hline
+Network Scale & 2-tank limit & Scalable & Highly Scalable \\
+\hline
+Simulation Type & Basic hydraulic & Advanced Hydraulic + WQ & Advanced Hydraulic + WQ \\
+\hline
+Cyber-Attack Sim. & No & Limited/External & Integrated \\
+\hline
+User Interface & Desktop-based & Desktop-based & Web Interface \\
+\hline
+Visualization & Basic Dashboards & Basic/Static & Real-time, Interactive Web \\
+\hline
+Accessibility & Local only & Local installation & Web-based, Cross-platform \\
+\hline
+Real-time Aspects & Physical only & Offline Simulation & Real-time Web Simulation \\
+\hline
+Hybrid C-P Focus & Digital Twin & Primarily Physical & Cyber + Physical Sim. \\
+\hline
+Ease of Use & Easy & Difficult & Easy \\
+\hline
+\end{tabular}
+\end{table*}
+
+\section{System Architecture}
+
+ACWAverse employs a modular, modern web-based architecture for scalability, extensibility, and universal accessibility, consisting of (1) Front-End Interface, (2) Simulation Engine, (3) Visualization Engine, and (4) Data Management layers. This 4-layered structure supports simulating both physical water system dynamics and cyber interactions, including sophisticated attack vectors, all within a browser environment.
+
+\subsection{Core Architecture Components}
+
+The system comprises four core architectural components designed for web-based operation. The front-end interface layer provides a modern and responsive web interface built with HTML5, CSS3 and JavaScript, featuring real-time network visualization, interactive component management, and dynamic form controls for simulation configuration.
+
+The simulation engine is central, featuring three integrated modules running entirely in the browser. The hydraulic simulation module performs advanced fluid dynamics calculations (pipe flow, pump curves, valve logic, pressure distribution) using graph-based topology management. The water quality module offers comprehensive modeling of pH, DO, BOD, nitrate transport, disinfectant decay, and temperature with reaction kinetics. Crucially, the cyber-attack simulation module allows users to define and execute various cyber-attack scenarios, including data poisoning with duration-based effects, chemical interference, and physical damage, interfacing with the other modules to manipulate simulated sensor readings, alter actuator setpoints, or disrupt control logic.
+
+The visualization engine introduces a sophisticated web-based approach, including Chart.js \cite{chartjs} for interactive time-series plots, custom HTML5 Canvas for network visualization, and multiple layout algorithms (topological sorting, balanced positioning, compact layout) for optimal network representation. The visualization includes real-time attack duration indicators and poisoned value display in graphs.
+
+Finally, the data management layer handles JSON-based network configuration, simulation scenario definitions (including cyber-attack parameters), operational data, and results storage, with CSV export capabilities for further analysis.
+
+\subsection{Network Modeling Framework}
+
+ACWAverse uses a sophisticated framework representing water networks as directed graphs with detailed component properties. Nodes include sources (with flow specifications), tanks (with geometric properties, initial levels, and operational ranges), pumps (with efficiency modeling and power control), valves (with status control and characteristic settings), junctions (for flow distribution), and sinks (for demand representation). Edges represent pipes with diameter, length, roughness, and material properties. This detailed modeling enables accurate simulation of flow, pressure, and water quality in complex networks.
+
+\section{Key Innovations}
+
+ACWAverse introduces significant innovations for water systems simulation, especially for intelligent systems and cyber security research in a web-based environment.
+
+A core innovation is the integrated cyber-attack simulation framework with duration-based effects. This dedicated module allows users to model sophisticated attack vectors including data poisoning (with virtual sensor readings that affect both conditional actions and graph visualization), chemical interference (modifying water quality parameters), and physical damage (pump failures, valve malfunctions, leaks). Attacks can be scheduled with specific durations and timing, and their effects are visualized in real-time with duration indicators on graphs.
+
+The platform provides advanced layout algorithms for network visualization. This includes topological sorting for layouts based on logical flow, balanced positioning for optimal space utilization, and compact layouts for dense network representation. These algorithms automatically adjust component positioning based on network complexity and user preferences.
+
+Real-time data poisoning with visual feedback capabilities represents a quantum leap in cyber-attack simulation. The system can inject false sensor readings for specified durations, affecting both conditional action evaluation and graph visualization, providing immediate visual feedback on attack impacts.
+
+In addition, comprehensive sample systems and educational features are prioritized. Pre-configured systems range from simple loops to complex real-world topologies like the Muleshoe Water System, enabling immediate experimentation and learning. The web-based interface enables remote access and collaboration without installation barriers.
+
+Lastly, the web-based accessibility and real-time visualization, eliminating the need for desktop installation. The platform runs entirely in modern browsers, providing cross-platform compatibility, real-time network visualization with multiple layout algorithms, and interactive data exploration without software installation requirements.
+
+
+\section{Implementation Details}
+
+ACWAverse leverages modern web technologies and robust numerical methods for browser-based simulation.
+
+\subsection{Web-based architecture implementation}
+
+The ACWAverse system is built using HTML5, CSS3, and vanilla JavaScript, ensuring broad browser compatibility without external dependencies. The front-end uses Tailwind CSS for responsive design and Chart.js for interactive data visualization. The simulation engine runs entirely client-side, providing real-time performance without server requirements.
+
+\subsection{Hydraulic simulation engine}
+
+The ACWAverse engine is advanced by solving the network continuity and energy relations iteratively. Pipe headloss is represented either by the Hazen--Williams form,
+\begin{equation}\label{eq:pipe_hl_hw}
+  h_{f,i} = K_i \, Q_i^{\,n},
+\end{equation}
+or by the Darcy--Weisbach form,
+\begin{equation}\label{eq:pipe_hl}
+  h_{f,i} = f_i \, \frac{8\,L_i}{\pi^2 g D_i^{\,5}} \, Q_i^{\,2},
+\end{equation}
+where the friction factor $f_i$ may depend on flow $Q_i$ and roughness $\varepsilon$ \cite{colebrook1939turbulent,moody1944friction,swamee1976explicit}. Pump head is modeled by a characteristic curve,
+\begin{equation}\label{eq:pump_head}
+  H_p(Q) = a_0 + a_1 Q + a_2 Q^{2},
+\end{equation}
+while valve losses are captured by
+\begin{equation}\label{eq:valve_hl}
+  h_v = K_v(\sigma)\, \frac{Q^{2}}{2 g A^{2}},
+\end{equation}
+with $\sigma$ denoting the valve opening. Mass continuity at junctions is enforced as
+\begin{equation}\label{eq:mass_balance}
+  \sum_{\text{in}} Q \, - \, \sum_{\text{out}} Q = 0,
+\end{equation}
+and tank water level $Y_t$ is updated by
+\begin{equation}\label{eq:tank_level}
+  \frac{\mathrm{d}Y_t}{\mathrm{d}t} = \frac{Q_{\text{in}}(t) - Q_{\text{out}}(t)}{A_t(Y_t)},
+\end{equation}
+where $A_t(Y_t)$ denotes the cross-sectional area at level $Y_t$. The network energy balance is imposed via
+\begin{equation}\label{eq:energy}
+  \sum \left( \frac{p}{\gamma} + z + \frac{V^2}{2g} \right) - h_L = \text{const}.
+\end{equation}
+The nonlinear system composed of \Eq{eq:mass_balance}-\Eq{eq:energy} is solved at each step prior to updating the quality states.
+
+\subsection{Water quality modeling}
+
+Transport and transformation of constituents are simulated in coupled fashion. Dissolved oxygen obeys
+\begin{equation}\label{eq:o2}
+  \frac{\mathrm{d}C_{O_2}}{\mathrm{d}t} = P_{\text{reaer}}(C_{O_2},T) - k_{O_2} C_{O_2} + \text{mixing},
+\end{equation}
+biochemical oxygen demand follows
+\begin{equation}\label{eq:bod}
+  \frac{\mathrm{d}C_{\mathrm{BOD}}}{\mathrm{d}t} = -k_{\mathrm{BOD}}\, C_{\mathrm{BOD}} + \text{mixing},
+\end{equation}
+and inorganic carbon/$\mathrm{CO_2}$ balance is written as
+\begin{equation}\label{eq:co2}
+  \frac{\mathrm{d}C_{\mathrm{CO_2}}}{\mathrm{d}t} = S_{\mathrm{CO_2}} - k_{\mathrm{str}} C_{\mathrm{CO_2}} + \text{mixing}.
+\end{equation}
+The resulting pH is given by
+\begin{equation}\label{eq:ph}
+  \mathrm{pH} = -\log_{10}\bigl[H^+\bigr], \\
+  \text{with charge balance } f\bigl([H^+],\, \mathrm{ALK},\, C_{\mathrm{CO_2}}\bigr) = 0.
+\end{equation}
+Water temperature is updated by the energy balance
+\begin{equation}\label{eq:temp}
+  \frac{\mathrm{d}T}{\mathrm{d}t} = \frac{U A}{m c_p}\,\bigl(T_{\mathrm{air}} - T\bigr) + \text{advection},
+\end{equation}
+and nitrate dynamics are represented by
+\begin{equation}\label{eq:nitrate}
+  \frac{\mathrm{d}C_{\mathrm{NO_3}}}{\mathrm{d}t} = -k_{\mathrm{NO_3}}\, C_{\mathrm{NO_3}} + \text{mixing}.
+\end{equation}
+Inter-unit exchange is modeled as a perfectly mixed transfer,
+\begin{equation}\label{eq:mix}
+  \frac{\mathrm{d}C_T}{\mathrm{d}t} = \frac{1}{\mathrm{Vol}_T} \left( \sum_i Q_{\mathrm{in},i} C_{\mathrm{in},i} - \sum_j Q_{\mathrm{out},j} C_T \right) + R(C_T).
+\end{equation}
+
+\subsection{Cyber-attack simulation implementation}
+
+Four cyber-physical perturbation modes are supported and are referenced at the start of the section: chemical dosing for pH control \(\Eq{eq:acid_dose}\), chemical interference on quality states \(\Eq{eq:chem_interf}\), physical damage that alters hydraulic or storage parameters \(\Eq{eq:phys_damage}\), and data poisoning of sensor streams \(\Eq{eq:data_poison}\). These mechanisms are scheduled by the scenario engine and are evaluated at each integration step concurrently with the plant model.
+
+\paragraph{Data poisoning.} Virtual sensor readings are modified over a programmed window,
+\begin{equation}\label{eq:data_poison}
+  P'_{\text{sensor}}(t) = P_{\text{actual}}(t) + \Delta P_{\text{attack}}, \qquad t \in [t_{\text{start}},\, t_{\text{end}}],
+\end{equation}
+so that both conditional logic and visualization ingest the altered values.
+
+\paragraph{Chemical interference.} State variables are directly offset,
+\begin{equation}\label{eq:chem_interf}
+  C_{\text{new}} = C_{\text{orig}} + \Delta C_{\text{attack}},
+\end{equation}
+which emulates contamination or reagent misdosing.
+
+\paragraph{Physical damage.} Component states are forced to degraded modes, for example pump failure,
+\begin{equation}\label{eq:phys_damage}
+  P_{\text{pump}} = 0,
+\end{equation}
+valve freeze,
+\begin{equation}
+  V_{\text{status}}(t) = V_{\text{status}}(t_0),
+\end{equation}
+and leak introduction,
+\begin{equation}
+  Q_{\text{leak}} = \alpha\, Q_{\text{orig}}, \quad 0<\alpha<1.
+\end{equation}
+
+\paragraph{Acid dosing for pH control.} An instantaneous dose is represented by
+\begin{equation}\label{eq:acid_dose}
+  C_{H^+}^{\,\text{new}} = C_{H^+} + \Delta C_{\text{dose}},
+\end{equation}
+with the updated pH computed via \Eq{eq:ph}. Real-world incidents are noted to underscore the operational risk of such manipulations \cite{cervini2022oldsmar,cisa2021oldsmar}.
+
+
+\subsection{Visualization implementation}
+
+The ACWAverse web interface uses HTML5 Canvas for network visualization with custom rendering algorithms. Chart.js provides interactive time-series plots with attack duration annotations. Multiple layout algorithms are implemented. An overview of the interface is shown in Fig.~\ref{fig:acwa_screen}.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{acwa-screen.png}
+\caption{ACWAverse web interface showing network builder and analysis tabs.}
+\label{fig:acwa_screen}
+\end{figure}
+
+Topological layout: Uses Kahn's algorithm for topological sorting with BFS-based level assignment~\cite{kahn1962topological}.
+
+Balanced layout: Grid-based positioning with type-based grouping and collision avoidance.
+
+Compact layout: Dense positioning for space-efficient visualization.
+
+\section{System UI} \label{sec:ui}
+
+Figure~\ref{fig:import} shows the updated entry screen where users can either load a bundled sample, import a saved JSON system, or create a new system from scratch. For distribution-style testbeds, the tool ships with an ACWA-inspired topologies. These presets provides a quick starting point for scenario generation and controller benchmarking.
+
+\begin{figure}[ht] \centering \includegraphics[width=0.75\linewidth]{images/ImportNetworks.png} \caption{Entry screen with sample selector, \textit{Load System from File}, and \textit{Create New System}.} \label{fig:import} \end{figure}
+
+Component creation and layout controls are consolidated in a right-side panel (Fig.~\ref{fig:components}). From here the user can add sources, pumps, valves, junctions, tanks, and sinks; adjust zoom and orientation; save the system; and export a PNG of the network schematic.
+
+\begin{figure}[ht] \centering \includegraphics[width=0.52\linewidth]{images/ComponentsMenu.png} \caption{Components and network management panel.} \label{fig:components} \end{figure}
+
+The connectivity between tanks, pumps, valves, and other elements is now edited via a matrix view (Fig.~\ref{fig:conn-matrix}), where rows denote sources (from) and columns denote destinations (to). This makes directionality explicit and prevents ambiguous links.
+
+\begin{figure}[ht] \centering \includegraphics[width=\linewidth]{images/ConnectivityMatrix.png} \caption{Connectivity Matrix. Rows are \emph{from} components and columns are \emph{to} components; checked cells create directed edges.} \label{fig:conn-matrix} \end{figure}
+
+Global parameters and initial states are defined prior to execution (Fig.~\ref{fig:sim-params}). In our experiments we ran 900~s simulations at 20~\textdegree C ambient temperature with specified initial levels and water quality states per tank.
+
+\begin{figure}[ht] \centering \includegraphics[width=0.6\linewidth]{images/SimulationParameters.png} \caption{Simulation parameters with initial state preview.} \label{fig:sim-params} \end{figure}
+
+Users can program both time-driven controls (Fig.~\ref{fig:timed}) and state-driven conditional logic (Fig.~\ref{fig:conditional}). Timed actions schedule changes at specific timestamps, whereas conditional rules react to sensor thresholds during the simulation. Together, these cover typical supervisory control use cases and cyber-physical test scenarios.
+
+\begin{figure}[ht] \centering \includegraphics[width=0.7\linewidth]{images/TimedControlActions.png} \caption{Timed control actions GUI.} \label{fig:timed} \end{figure}
+
+\begin{figure}[ht] \centering \includegraphics[width=0.62\linewidth]{images/ConditionalActions.png} \caption{Conditional (event-driven) actions GUI.} \label{fig:conditional} \end{figure}
+
+ACWAverse includes a library of cyber-physical attack scenarios (Fig.~\ref{fig:attacks}) for studies. These allow injecting pH dosing events, chemical interference, physical damage, or data poisoning on selected components at runtime, enabling repeatable stress tests for resilience analysis.
+
+\begin{figure}[ht] \centering \includegraphics[width=0.75\linewidth]{images/CyberPhysicalAttackScenarios.png} \caption{Cyber-physical attack scenarios panel.} \label{fig:attacks} \end{figure}
+
+After a run, per-component diagnostics are available (Fig.~\ref{fig:component-graphs}), including water level, volumetric amount, power, and temperature traces. Results can be exported to CSV to reproduce the plots offline and to support statistical comparisons across trials.
+
+\begin{figure}[ht] \centering \includegraphics[width=0.9\linewidth]{images/ComponentGraphs.png} \caption{Per-component time series plots and CSV export.} \label{fig:component-graphs} \end{figure}
+
+\section{Research Applications and Use Cases}
+
+ACWAverse serves as an open access comprehensive research platform for cyber-physical security, machine learning, and digital twin applications in water infrastructure systems.
+
+\subsection{Cyber-Physical Security Research}
+
+ACWAverse provides a comprehensive environment for cyber-physical security research, enabling the study of attack propagation, system resilience, and defense mechanism effectiveness. Researchers can investigate how cyber-attacks affect physical system behavior, study attack cascading effects, and develop countermeasures for critical infrastructure protection. The platform supports vulnerability assessment, threat modeling, and security protocol validation, providing insights into the complex interactions between cyber and physical systems.
+
+\subsection{Dataset Generation for Machine Learning}
+
+ACWAverse provides extensive capabilities for generating synthetic datasets for machine learning research in cyber-physical security. The platform can generate diverse attack scenarios with varying parameters, timing, and intensities, creating labeled datasets for training supervised learning models. The system supports batch simulation runs with different network configurations, attack types, and environmental conditions, enabling the creation of large-scale datasets for deep learning applications. Generated datasets include time-series data with attack annotations, system state information, and performance metrics, providing comprehensive training data for anomaly detection, attack classification, and predictive modeling algorithms.
+
+\subsection{Digital Twin Functionality}
+
+ACWAverse serves as a digital twin environment for water infrastructure systems, enabling real-time monitoring, predictive maintenance, and cyber-resilience assessment. The platform can be configured to mirror real-world water systems, providing a virtual representation for testing control strategies and security measures before deployment. Digital twin capabilities include real-time state synchronization, predictive modeling of system behavior, and virtual testing of cyber-attack scenarios without risk to physical infrastructure. This functionality enables the development of robust defense mechanisms and the validation of security protocols in a safe, controlled environment.
+
+\subsection{Meta-Learning for Attack Detection}
+
+The platform supports meta-learning \cite{schmidhuber:1987:srl} approaches for developing adaptive attack detection and response strategies. By generating diverse attack scenarios and system configurations, ACWAverse enables the training of meta-learning models that can quickly adapt to new attack types and system variations. The system's ability to simulate different attack patterns, timing, and intensities allows researchers to develop models that generalize across various cyber-physical threats. Meta-learning applications include few-shot learning for new attack detection, adaptive anomaly detection, and transfer learning for different water system topologies.
+
+\section{Case Studies and Examples}
+
+ACWAverse offers a rich feature set for research in intelligent water systems and cyber security through its web-based platform. For network design and management, it provides an intuitive web interface for visual network creation with drag-and-drop capabilities and an extensive component library. Users can leverage pre-configured sample systems, import/export data in JSON format, and manage multiple scenarios through the browser interface.
+
+Simulation configuration and control is highly flexible through the web interface. Users can define simulation duration and time steps, easily modify physical parameters and operational settings, and utilize dedicated interfaces for defining cyber-attack scenarios (type, target, parameters, timing, duration). The system supports testing various control strategies, from simple rules to advanced conditional actions, and offers real-time simulation control.
+
+Key parameters are monitored in real-time through interactive web dashboards. The system generates detailed time-series data for all components with export capabilities. It supports multi-parameter visualization, temporal trend analysis with statistics, and spatial distribution maps. Specific metrics and visualizations are available for attack impact assessment, including duration-based attack indicators and poisoned value visualization.
+
+To illustrate ACWAverse's capabilities, several case studies are presented demonstrating the platform's versatility and practical applicability.
+
+\subsection{4-Tank Conditional Loop}
+
+This topology demonstrates the integrated cyber-attack framework and conditional control logic. A 4-tank loop system with conditional actions based on tank levels is subjected to data poisoning attacks. The attack targets tank level sensors, injecting false readings for specified durations. Objectives include observing pump control responses to poisoned data, determining physical consequences, and evaluating the visual feedback system. The simulation demonstrates how poisoned sensor readings trigger false conditional actions, leading to system instability, with the effects clearly visualized in both the network display and time-series graphs with attack duration indicators.
+
+\subsection{ACWA Topologies Network}
+
+These topologies showcase ACWAverse's ability to handle complex network topologies and multiple attack scenarios. A star topology system with a central hub and peripheral distribution is subjected to various attack types including data poisoning, chemical interference, and physical damage. The system demonstrates how different layout algorithms (topological, balanced, compact) can be used to visualize the same network effectively. The case study shows how attacks propagate through the network and affect different components, with real-time visualization of attack impacts and duration-based effects.
+
+\subsection{Muleshoe Water System: Real-World Topology}
+
+This topology demonstrates ACWAverse's capability to model real-world water distribution systems. The Muleshoe Water System, representing a typical municipal water distribution network, is implemented with proper junctions, booster pumps, and distribution patterns. The system includes realistic flow rates, tank capacities, and operational parameters. This case study shows how ACWAverse can be used for practical water system analysis, including vulnerability assessment and cyber-resilience testing on realistic infrastructure models. Fig.~\ref{fig:muleshoe} illustrates a representative HMI view of the Muleshoe system, and Fig.~\ref{fig:acwa_muleshoe_replica} shows the corresponding ACWAverse replication used in our experiments.
+
+\begin{figure}[t]
+\centering
+% \includegraphics[width=0.5\textwidth]{muleshoe.png}
+\includegraphics[width=\linewidth]{muleshoe.png}
+\caption{Muleshoe Water System visualization used in ACWAverse case study (image context and incident details per \cite{pcmag2024muleshoe}).}
+\label{fig:muleshoe}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+% \includegraphics[width=0.8\textwidth]{acwa-muleshoe-horizontal.png}
+\includegraphics[width=\linewidth]{acwa-muleshoe-horizontal.png}
+\caption{ACWAverse replication of the Muleshoe network layout corresponding to Fig.~\ref{fig:muleshoe}. \cite{pcmag2024muleshoe}}
+\label{fig:acwa_muleshoe_replica}
+\end{figure}
+
+\subsection{Visualization and Layout Algorithms}
+
+A comprehensive comparison of ACWAverse's visualization capabilities demonstrates the effectiveness of different layout algorithms. The same network is visualized using topological, balanced, and compact layouts, showing how each algorithm optimizes different aspects of network representation. The comparison includes real-time attack visualization with duration indicators, poisoned value display in graphs, and interactive data exploration capabilities. These case studies exemplify ACWAverse's utility in tackling diverse water system challenges through its web-based platform.
+
+\section{Evaluation and Results}
+
+ACWAverse's performance, accuracy, and usability are evaluated in a web-based environment. Performance analysis revealed efficient browser-based simulation capabilities. For complex networks (50+ nodes, 70+ pipes), 24-hour simulations complete within seconds in modern browsers, demonstrating the effectiveness of client-side computation. Memory utilization scales reasonably, with a 100-component network using under 100MB of browser memory. Scalability tests on networks with over 500 components demonstrated practical performance for research applications in web environments.
+
+Accuracy validation against established benchmarks showed strong results. Hydraulic calculations (flow, pressure) deviated less than 2\% from theoretical expectations for identical configurations. Pump and valve operations matched theoretical behavior. Water quality modeling, including tracer transport and first-order decay, agreed well with analytical solutions (typically within 5\% for concentrations). Simulated physical consequences of cyber-attacks are consistent with logical expectations, validating the cyber module's interface with physical models.
+
+Usability evaluation demonstrated significant improvements in accessibility. The web-based interface eliminates installation barriers, enabling immediate access from any device with a modern browser. The intuitive interface allows users to create complex networks and configure sophisticated attack scenarios without specialized training. Real-time visualization with multiple layout options enhances understanding of system behavior and attack impacts.
+
+\section{Conclusion}
+
+ACWAverse is a foundation for continued development in web-based cyber-physical simulation. Future advanced modeling capabilities include tighter AI/ML integration for training models, using ML as soft sensors or AI adversaries; incorporating Uncertainty Quantification (UQ) techniques; multi-physics coupling with groundwater, structural, or power system models; modules for advanced water treatment processes; and integrating real-time optimization algorithms.
+
+Enhanced cyber-security features will involve expanding the attack library (Man-in-the-Middle, protocol-specific attacks), enabling simulation of defense mechanisms (IDS, resilient controls), and modeling cyber-physical co-evolution of attacks and defenses.
+
+Improved usability and collaboration may see cloud-based deployment options, collaborative design tools, version control integration, and strengthened digital twin capabilities with real-time data ingestion and model calibration.
+
+Industry and educational integration efforts will focus on SCADA/PLC interfaces for Hardware/Software-in-the-Loop simulation, expanded support for industry standards, dedicated educational modules and tutorials, and features for regulatory reporting assistance.
+
+ACWAverse represents a transformative advancement in cyber-physical security research, addressing critical gaps in cybersecurity research for water infrastructure systems and introducing revolutionary capabilities for machine learning, digital twin applications, and meta-learning approaches. Its comprehensive cyber-physical approach, integrating advanced hydraulic/water quality modeling with sophisticated cyber-attack simulation frameworks, enables a holistic understanding of system behavior under normal and adversarial conditions, providing a powerful platform for developing intelligent defense mechanisms.
+
+Key achievements include scalable network modeling beyond the 2-tank limit, advanced cyber-attack simulation with duration-based effects and real-time data poisoning, comprehensive dataset generation capabilities for machine learning research, digital twin functionality for water infrastructure, and meta-learning approaches for adaptive attack detection. The integrated cyber-attack simulation module, particularly the data poisoning capabilities that affect both conditional actions and system visualization, is invaluable for training machine learning models and developing cyber-resilience strategies.
+
+Evaluations confirm efficient simulation capabilities, validated accuracy, and comprehensive data export functionality for research applications. The modular architecture ensures adaptability for future research needs in cyber-physical security. ACWAverse significantly contributes to addressing global cybersecurity challenges in critical infrastructure by providing a powerful research platform for developing, testing, and validating machine learning models, digital twin applications, and intelligent defense mechanisms. Its continued development will foster innovation in cyber-physical security research and help develop the next generation of intelligent, resilient, and secure water systems.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

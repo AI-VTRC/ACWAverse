@@ -1,0 +1,102 @@
+{
+    "name": "New Untitled System",
+    "network": {
+        "components": [
+            {
+                "id": "source_1",
+                "type": "source",
+                "waterLevel": 0,
+                "temperature": 20,
+                "ph": 7,
+                "o2": 8,
+                "bodn": 2,
+                "nitrate": 1,
+                "co2": 5,
+                "position": {
+                    "x": 50,
+                    "y": 50
+                }
+            },
+            {
+                "id": "pump_1",
+                "type": "pump",
+                "temperature": 20,
+                "ph": 7,
+                "o2": 8,
+                "maxFlowRate": 0.5,
+                "position": {
+                    "x": 170,
+                    "y": 50
+                }
+            },
+            {
+                "id": "valve_2",
+                "type": "valve",
+                "position": {
+                    "x": 290,
+                    "y": 50
+                }
+            },
+            {
+                "id": "tank_2",
+                "type": "tank",
+                "shape": "cylindrical",
+                "waterLevel": 0,
+                "waterAmount": 0,
+                "temperature": 20,
+                "ph": 7,
+                "o2": 8,
+                "bodn": 2,
+                "nitrate": 1,
+                "co2": 5,
+                "maxLevel": 10,
+                "radius": 1,
+                "position": {
+                    "x": 410,
+                    "y": 50
+                }
+            }
+        ],
+        "pipes": [
+            {
+                "id": "pipe_1",
+                "from": "source_1",
+                "to": "pump_1"
+            },
+            {
+                "id": "pipe_2",
+                "from": "pump_1",
+                "to": "valve_2"
+            },
+            {
+                "id": "pipe_3",
+                "from": "valve_2",
+                "to": "tank_2"
+            }
+        ]
+    },
+    "controlActions": [
+        {
+            "time": 0,
+            "componentId": "pump_1",
+            "actionType": "set_pump_power",
+            "params": {
+                "power": "100"
+            }
+        },
+        {
+            "time": 0,
+            "componentId": "valve_2",
+            "actionType": "set_valve_state",
+            "params": {
+                "state": "open"
+            }
+        }
+    ],
+    "conditionalActions": [],
+    "attackScenarios": [],
+    "simulationSettings": {
+        "duration": "600",
+        "ambientTemp": "20"
+    }
+}
