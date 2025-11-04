@@ -50,7 +50,12 @@ jobs:
             mkdir -p docs/dist
           fi
           cp -r src/dist/* docs/dist/ 2>/dev/null || true
+          echo "=== Verifying docs folder structure ==="
+          ls -la docs/
+          echo "=== Verifying index.html is at root ==="
           ls -la docs/index.html
+          echo "=== Contents of docs folder ==="
+          find docs -type f -name "*.html" -o -name "*.js" -o -name "*.css" | head -20
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
