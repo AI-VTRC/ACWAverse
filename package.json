@@ -5,7 +5,8 @@
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
-    "test": "npm run build && node src/tests/run-node-tests.js"
+    "test": "npm run build && node src/tests/run-node-tests.js",
+    "deploy:local": "npm run build && mkdir -p docs && cp -r src/* docs/ && touch docs/.nojekyll"
   },
   "devDependencies": {
     "typescript": "^5.4.0"
