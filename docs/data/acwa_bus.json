@@ -1,0 +1,558 @@
+{
+    "name": "Bus Topology (ACWA)",
+    "network": {
+        "components": [
+            {
+                "id": "source_1",
+                "type": "source",
+                "temperature": 18,
+                "ph": 7.2,
+                "o2": 9,
+                "bodn": 1,
+                "nitrate": 0.5,
+                "co2": 4,
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                }
+            },
+            {
+                "id": "valve_1",
+                "type": "valve",
+                "flowRate": 1.8,
+                "isOpen": true,
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                }
+            },
+            {
+                "id": "tank_1",
+                "type": "tank",
+                "shape": "rectangular",
+                "width": 2,
+                "height": 1.5,
+                "maxLevel": 12,
+                "waterLevel": 8,
+                "temperature": 18,
+                "ph": 7.1,
+                "o2": 8.5,
+                "bodn": 1.2,
+                "nitrate": 0.6,
+                "co2": 4.5,
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                }
+            },
+            {
+                "id": "pump_1",
+                "type": "pump",
+                "maxFlowRate": 1.8,
+                "efficiency": 0.85,
+                "power": 2.5,
+                "temperature": 18,
+                "ph": 7.1,
+                "o2": 8.5,
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                }
+            },
+            {
+                "id": "valve_2",
+                "type": "valve",
+                "flowRate": 1.6,
+                "isOpen": true,
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                }
+            },
+            {
+                "id": "junction_1",
+                "type": "junction",
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                }
+            },
+            {
+                "id": "valve_3",
+                "type": "valve",
+                "flowRate": 1.2,
+                "isOpen": true,
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                }
+            },
+            {
+                "id": "tank_2",
+                "type": "tank",
+                "shape": "rectangular",
+                "width": 2,
+                "height": 1.5,
+                "maxLevel": 12,
+                "waterLevel": 8,
+                "temperature": 18,
+                "ph": 7.1,
+                "o2": 8.5,
+                "bodn": 1.2,
+                "nitrate": 0.6,
+                "co2": 4.5,
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                }
+            },
+            {
+                "id": "valve_4",
+                "type": "valve",
+                "flowRate": 1,
+                "isOpen": true,
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                }
+            },
+            {
+                "id": "junction_2",
+                "type": "junction",
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                }
+            },
+            {
+                "id": "valve_5",
+                "type": "valve",
+                "flowRate": 0.6,
+                "isOpen": true,
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                }
+            },
+            {
+                "id": "tank_3",
+                "type": "tank",
+                "shape": "rectangular",
+                "width": 2,
+                "height": 1.5,
+                "maxLevel": 12,
+                "waterLevel": 8,
+                "temperature": 18,
+                "ph": 7.1,
+                "o2": 8.5,
+                "bodn": 1.2,
+                "nitrate": 0.6,
+                "co2": 4.5,
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                }
+            },
+            {
+                "id": "valve_6",
+                "type": "valve",
+                "flowRate": 0.4,
+                "isOpen": true,
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                }
+            },
+            {
+                "id": "junction_3",
+                "type": "junction",
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                }
+            },
+            {
+                "id": "valve_7",
+                "type": "valve",
+                "flowRate": 0.1,
+                "isOpen": true,
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                }
+            },
+            {
+                "id": "tank_4",
+                "type": "tank",
+                "shape": "rectangular",
+                "width": 2,
+                "height": 1.5,
+                "maxLevel": 12,
+                "waterLevel": 8,
+                "temperature": 18,
+                "ph": 7.1,
+                "o2": 8.5,
+                "bodn": 1.2,
+                "nitrate": 0.6,
+                "co2": 4.5,
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                }
+            },
+            {
+                "id": "tank_5",
+                "type": "tank",
+                "shape": "rectangular",
+                "width": 2,
+                "height": 1.5,
+                "maxLevel": 12,
+                "waterLevel": 8,
+                "temperature": 18,
+                "ph": 7.1,
+                "o2": 8.5,
+                "bodn": 1.2,
+                "nitrate": 0.6,
+                "co2": 4.5,
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                }
+            }
+        ],
+        "pipes": [
+            {
+                "id": "pipe_source_valve1",
+                "from": "source_1",
+                "to": "valve_1"
+            },
+            {
+                "id": "pipe_valve1_tank1",
+                "from": "valve_1",
+                "to": "tank_1"
+            },
+            {
+                "id": "pipe_tank1_pump1",
+                "from": "tank_1",
+                "to": "pump_1"
+            },
+            {
+                "id": "pipe_pump1_valve2",
+                "from": "pump_1",
+                "to": "valve_2"
+            },
+            {
+                "id": "pipe_valve2_junction1",
+                "from": "valve_2",
+                "to": "junction_1"
+            },
+            {
+                "id": "pipe_junction1_valve3",
+                "from": "junction_1",
+                "to": "valve_3"
+            },
+            {
+                "id": "pipe_valve3_tank2",
+                "from": "valve_3",
+                "to": "tank_2"
+            },
+            {
+                "id": "pipe_junction1_valve4",
+                "from": "junction_1",
+                "to": "valve_4"
+            },
+            {
+                "id": "pipe_valve4_junction2",
+                "from": "valve_4",
+                "to": "junction_2"
+            },
+            {
+                "id": "pipe_junction2_valve5",
+                "from": "junction_2",
+                "to": "valve_5"
+            },
+            {
+                "id": "pipe_valve5_tank3",
+                "from": "valve_5",
+                "to": "tank_3"
+            },
+            {
+                "id": "pipe_junction2_valve6",
+                "from": "junction_2",
+                "to": "valve_6"
+            },
+            {
+                "id": "pipe_valve6_junction3",
+                "from": "valve_6",
+                "to": "junction_3"
+            },
+            {
+                "id": "pipe_junction3_valve7",
+                "from": "junction_3",
+                "to": "valve_7"
+            },
+            {
+                "id": "pipe_valve7_tank4",
+                "from": "valve_7",
+                "to": "tank_4"
+            },
+            {
+                "id": "pipe_junction3_tank5",
+                "from": "junction_3",
+                "to": "tank_5"
+            }
+        ]
+    },
+    "controlActions": [
+        {
+            "time": 0,
+            "componentId": "valve_1",
+            "actionType": "set_valve_flow",
+            "params": {
+                "flowRate": "1.8"
+            }
+        },
+        {
+            "time": 0,
+            "componentId": "pump_1",
+            "actionType": "set_pump_power",
+            "params": {
+                "power": "2.5"
+            }
+        },
+        {
+            "time": 200,
+            "componentId": "valve_2",
+            "actionType": "set_valve_flow",
+            "params": {
+                "flowRate": "1.6"
+            }
+        },
+        {
+            "time": 400,
+            "componentId": "valve_3",
+            "actionType": "set_valve_flow",
+            "params": {
+                "flowRate": "1.2"
+            }
+        },
+        {
+            "time": 600,
+            "componentId": "valve_4",
+            "actionType": "set_valve_flow",
+            "params": {
+                "flowRate": "1.0"
+            }
+        }
+    ],
+    "conditionalActions": [
+        {
+            "source": {
+                "componentId": "tank_1",
+                "value": "waterLevel"
+            },
+            "condition": {
+                "operator": "<",
+                "threshold": 0.1
+            },
+            "target": {
+                "componentId": "valve_1",
+                "actionType": "emergency_close",
+                "params": {}
+            }
+        },
+        {
+            "source": {
+                "componentId": "tank_1",
+                "value": "waterLevel"
+            },
+            "condition": {
+                "operator": "<",
+                "threshold": 0.1
+            },
+            "target": {
+                "componentId": "pump_1",
+                "actionType": "emergency_stop",
+                "params": {}
+            }
+        },
+        {
+            "source": {
+                "componentId": "tank_1",
+                "value": "waterLevel"
+            },
+            "condition": {
+                "operator": ">",
+                "threshold": 0.9
+            },
+            "target": {
+                "componentId": "valve_2",
+                "actionType": "set_valve_state",
+                "params": {
+                    "state": "open"
+                }
+            }
+        },
+        {
+            "source": {
+                "componentId": "tank_2",
+                "value": "waterLevel"
+            },
+            "condition": {
+                "operator": "<",
+                "threshold": 0.1
+            },
+            "target": {
+                "componentId": "valve_3",
+                "actionType": "emergency_close",
+                "params": {}
+            }
+        },
+        {
+            "source": {
+                "componentId": "tank_3",
+                "value": "waterLevel"
+            },
+            "condition": {
+                "operator": "<",
+                "threshold": 0.1
+            },
+            "target": {
+                "componentId": "valve_5",
+                "actionType": "emergency_close",
+                "params": {}
+            }
+        },
+        {
+            "source": {
+                "componentId": "tank_4",
+                "value": "waterLevel"
+            },
+            "condition": {
+                "operator": "<",
+                "threshold": 0.1
+            },
+            "target": {
+                "componentId": "valve_7",
+                "actionType": "emergency_close",
+                "params": {}
+            }
+        },
+        {
+            "source": {
+                "componentId": "tank_1",
+                "value": "waterLevel"
+            },
+            "condition": {
+                "operator": ">",
+                "threshold": 0.8
+            },
+            "target": {
+                "componentId": "pump_1",
+                "actionType": "reduce_power",
+                "params": {
+                    "power": "50"
+                }
+            }
+        },
+        {
+            "source": {
+                "componentId": "tank_1",
+                "value": "waterLevel"
+            },
+            "condition": {
+                "operator": "<",
+                "threshold": 0.2
+            },
+            "target": {
+                "componentId": "pump_1",
+                "actionType": "increase_power",
+                "params": {
+                    "power": "100"
+                }
+            }
+        }
+    ],
+    "attackScenarios": [
+        {
+            "time": 300,
+            "type": "chemical_dosing",
+            "componentId": "tank_2",
+            "chemicalType": "acid"
+        },
+        {
+            "time": 600,
+            "type": "physical_damage",
+            "componentId": "valve_2",
+            "damageType": "valve_stuck"
+        },
+        {
+            "time": 450,
+            "type": "physical_damage",
+            "componentId": "valve_3",
+            "damageType": "valve_stuck"
+        },
+        {
+            "time": 180,
+            "type": "chemical_dosing",
+            "componentId": "tank_2",
+            "chemicalType": "acid"
+        },
+        {
+            "time": 720,
+            "type": "physical_damage",
+            "componentId": "valve_5",
+            "damageType": "valve_stuck"
+        },
+        {
+            "time": 540,
+            "type": "chemical_interference",
+            "componentId": "tank_4",
+            "chemical": "nitrate",
+            "amount": 3
+        },
+        {
+            "time": 360,
+            "type": "physical_damage",
+            "componentId": "valve_7",
+            "damageType": "valve_stuck"
+        },
+        {
+            "time": 250,
+            "type": "data_poisoning",
+            "componentId": "tank_1",
+            "poisonType": "waterLevel",
+            "value": 0.05,
+            "duration": 300
+        },
+        {
+            "time": 350,
+            "type": "data_poisoning",
+            "componentId": "tank_2",
+            "poisonType": "waterLevel",
+            "value": 0.95,
+            "duration": 200
+        }
+    ],
+    "simulationSettings": {
+        "duration": 900,
+        "ambientTemp": 20
+    }
+}

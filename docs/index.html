@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACWAverse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen flex flex-col bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 flex-1">
+        <h1 class="text-3xl font-bold text-center mb-4 text-gray-900">ACWAverse</h1>
+
+        <!-- System Management View -->
+        <div id="system-management-view" class="bg-white rounded-lg shadow-lg p-8 text-center">
+            <h2 class="text-2xl font-semibold mb-4">System Management</h2>
+            <p class="text-gray-600 mb-6">Load an existing system or start a new one.</p>
+            <div class="max-w-md mx-auto space-y-4">
+                <div class="flex items-center space-x-2">
+                    <select id="sampleSystemsList" class="block w-full rounded-md border-gray-300 shadow-sm p-3"></select>
+                    <button onclick="loadSelectedSampleSystem()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg whitespace-nowrap">Load Sample</button>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="document.getElementById('loadSystemInput').click()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg w-full">Load System from File</button>
+                    <input type="file" id="loadSystemInput" class="hidden" accept=".json" onchange="loadSystemFromFile(event)">
+                    <button onclick="createNewSystem()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg w-full">Create New System</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Simulator View -->
+        <div id="main-simulator-view" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                 <h2 class="text-2xl font-semibold" id="system-name-display"></h2>
+                 <button onclick="showSystemManagementView()" class="text-sm text-blue-600 hover:underline">&larr; Back to System Management</button>
+            </div>
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <!-- Tabs -->
+                <div class="border-b border-gray-200">
+                    <nav class="-mb-px flex flex-wrap space-x-8" aria-label="Tabs">
+                        <button onclick="changeTab(event, 'build')" id="tab-btn-build" class="tab-button active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Build Your Network</button>
+                        <button onclick="changeTab(event, 'simulation')" id="tab-btn-simulation" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Simulation Settings</button>
+                        <button onclick="changeTab(event, 'analysis')" id="tab-btn-analysis" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" disabled>Analysis & Visualization</button>
+                        <button onclick="changeTab(event, 'controls')" id="tab-btn-controls" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Timed Control Actions</button>
+                        <button onclick="changeTab(event, 'conditionals')" id="tab-btn-conditionals" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Conditional Actions</button>
+                        <button onclick="changeTab(event, 'attacks')" id="tab-btn-attacks" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Cyber-Physical Attacks</button>
+                    </nav>
+                </div>
+
+                <!-- Build Your Network Tab -->
+                <div id="build" class="tab-content active mt-6">
+                                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                    <div class="lg:col-span-1 space-y-3">
+                            <h2 class="text-xl font-semibold">Components</h2>
+                            <div class="grid grid-cols-2 gap-3">
+                                <button onclick="addComponent('source')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Add Source</button>
+                                <button onclick="addComponent('pump')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Add Pump</button>
+                                <button onclick="addComponent('valve')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Add Valve</button>
+                                <button onclick="addComponent('junction')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Add Junction</button>
+                                <button onclick="openTankModal()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Add Tank</button>
+                                <button onclick="addComponent('sink')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Add Sink</button>
+                            </div>
+                            
+                            <hr>
+                            <h3 class="text-lg font-semibold">Legend</h3>
+                            <div class="space-y-1 text-sm">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-4 h-4 rounded-full" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); border: 2px solid #1e40af;"></div>
+                                    <span>Source</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-4 h-4 rounded-full" style="background: linear-gradient(135deg, #f59e0b, #d97706); border: 2px solid #b45309;"></div>
+                                    <span>Pump</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-4 h-4 rounded-full" style="background: linear-gradient(135deg, #eab308, #ca8a04); border: 2px solid #a16207;"></div>
+                                    <span>Valve</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-4 h-4 rounded-full" style="background: linear-gradient(135deg, #6b7280, #4b5563); border: 2px solid #374151;"></div>
+                                    <span>Junction</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-4 h-4 rounded-full" style="background: linear-gradient(135deg, #10b981, #059669); border: 2px solid #047857;"></div>
+                                    <span>Tank</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-4 h-4 rounded-full" style="background: linear-gradient(135deg, #ef4444, #dc2626); border: 2px solid #b91c1c;"></div>
+                                    <span>Sink</span>
+                                </div>
+                            </div>
+                            <hr>
+                            <h2 class="text-xl font-semibold">Network Management</h2>
+                            <div class="flex space-x-2">
+                                <button onclick="saveSystem()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg flex-1">Save System</button>
+                                <button id="exportNetworkBtn" onclick="exportNetworkAsPNG()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg flex-1">Save Network PNG</button>
+                            </div>
+                            <div class="mt-2 flex items-center space-x-3">
+                                <label for="zoomRange" class="text-sm text-gray-700 whitespace-nowrap">Zoom</label>
+                                <input id="zoomRange" type="range" min="25" max="200" value="100" step="5" class="w-full" oninput="setZoom(this.value)">
+                                <span id="zoomLabel" class="text-sm text-gray-600 w-12 text-right">100%</span>
+                            </div>
+                            <div class="mt-2 flex items-center space-x-2">
+                                <span class="text-sm text-gray-700">Direction</span>
+                                <button id="dir-vertical" onclick="setLayoutDirection('vertical')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-medium py-1 px-3 rounded">Vertical</button>
+                                <button id="dir-horizontal" onclick="setLayoutDirection('horizontal')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-medium py-1 px-3 rounded">Horizontal</button>
+                            </div>
+                             <button id="connectComponentsBtn" onclick="openConnectivityModal()" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg w-full">Connectivity Matrix</button>
+                             <div class="text-xs text-gray-500 mt-2">
+                                 <span id="layout-info">Layout: Balanced</span>
+                                 <select id="layoutSelector" class="ml-2 text-xs border border-gray-300 rounded px-1 py-0.5" onchange="changeLayout()">
+                                     <option value="balanced">Balanced</option>
+                                     <option value="topological">Topological</option>
+                                     <option value="compact">Compact</option>
+                                 </select>
+                             </div>
+
+                        </div>
+                        <div id="network-visualizer-container" class="lg:col-span-3 bg-gray-200 rounded-lg p-2" style="height: 500px;">
+                            <div id="network-visualizer-content">
+                                <!-- Components and pipes will be injected here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulation Settings Tab -->
+                <div id="simulation" class="tab-content mt-6">
+                    <h2 class="text-xl font-semibold mb-4">Simulation Parameters</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="simDuration" class="block text-sm font-medium text-gray-700">Simulation Duration (seconds)</label>
+                            <input type="number" id="simDuration" value="900" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        </div>
+                         <div>
+                            <label for="ambientTemp" class="block text-sm font-medium text-gray-700">Ambient Temperature (°C)</label>
+                            <input type="number" id="ambientTemp" value="20" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        </div>
+                         <button onclick="startSimulation()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Start Simulation</button>
+                         <div id="simulation-progress" class="hidden mt-4">
+                            <p>Simulation in progress...</p>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-semibold mt-6 mb-2">Initial State</h3>
+                    <div id="initial-conditions-container" class="space-y-2">
+                        <!-- Dynamic content here -->
+                    </div>
+                </div>
+
+                <!-- Analysis & Visualization Tab -->
+                <div id="analysis" class="tab-content mt-6">
+                    <div id="analysis-prompt" class="text-center p-8 bg-gray-50 rounded-lg">
+                        <h3 class="text-lg font-medium text-gray-700">No data to display.</h3>
+                        <p class="mt-1 text-sm text-gray-500">Please run a simulation to generate data for analysis.</p>
+                    </div>
+                    <div id="analysis-content" class="hidden">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex-grow mr-4">
+                                <label for="analysisComponent" class="block text-sm font-medium text-gray-700">Select Component for Analysis</label>
+                                <select id="analysisComponent" onchange="renderAnalysisCharts()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2"></select>
+                            </div>
+                            <div class="mt-6">
+                                <button id="exportResultsBtn" onclick="exportResults()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Export Results (CSV)</button>
+                            </div>
+                        </div>
+                        <div id="charts-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Charts will be injected here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timed Control Actions Tab -->
+                <div id="controls" class="tab-content mt-6">
+                     <h2 class="text-xl font-semibold mb-4">Timed Control Actions</h2>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                            <div>
+                                <label for="controlTime" class="block text-sm font-medium text-gray-700">Time (s)</label>
+                                <input type="number" id="controlTime" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                            </div>
+                            <div>
+                                <label for="controlComponent" class="block text-sm font-medium text-gray-700">Component</label>
+                                <select id="controlComponent" onchange="handleControlComponentChange()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2"></select>
+                            </div>
+                            <div>
+                                <label for="controlAction" class="block text-sm font-medium text-gray-700">Action</label>
+                                <select id="controlAction" onchange="updateControlActionParams()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                                    <option value="set_pump_power">Set Pump Power</option>
+                                    <option value="set_valve_state">Set Valve State</option>
+                                    <option value="set_valve_flow">Set Valve Flow</option>
+                                </select>
+                            </div>
+                             <div id="controlActionParams">
+                                <!-- Dynamic params based on action -->
+                            </div>
+                            <button onclick="addControlAction()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Add Action</button>
+                        </div>
+                    </div>
+
+                    <h3 class="text-lg font-semibold mt-6 mb-2">Scheduled Actions</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time (s)</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Component</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Parameters</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="controlActionsTable" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Conditional Actions Tab -->
+                <div id="conditionals" class="tab-content mt-6">
+                    <h2 class="text-xl font-semibold mb-4">Conditional Actions</h2>
+                    <div class="p-4 border rounded-lg bg-gray-50">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Trigger Part -->
+                            <div class="space-y-2">
+                                <h4 class="font-medium text-gray-800">IF</h4>
+                                <div class="flex items-center space-x-2">
+                                    <select id="cond_source_comp" class="w-full rounded-md border-gray-300 shadow-sm p-2"></select>
+                                    <select id="cond_source_val" class="w-full rounded-md border-gray-300 shadow-sm p-2"></select>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <select id="cond_operator" class="w-1/2 rounded-md border-gray-300 shadow-sm p-2">
+                                        <option value=">">is greater than</option>
+                                        <option value="<">is less than</option>
+                                        <option value="==">is equal to</option>
+                                    </select>
+                                    <input type="number" id="cond_threshold" placeholder="Value" class="w-1/2 rounded-md border-gray-300 shadow-sm p-2">
+                                </div>
+                            </div>
+                            <!-- Action Part -->
+                            <div class="space-y-2">
+                                <h4 class="font-medium text-gray-800">THEN</h4>
+                                 <select id="cond_target_comp" onchange="handleConditionalTargetChange()" class="w-full rounded-md border-gray-300 shadow-sm p-2"></select>
+                                 <select id="cond_target_action" onchange="updateConditionalActionParams()" class="w-full rounded-md border-gray-300 shadow-sm p-2">
+                                    <option value="set_pump_power">Set Pump Power</option>
+                                    <option value="set_valve_state">Set Valve State</option>
+                                    <option value="set_valve_flow">Set Valve Flow</option>
+                                    <option value="emergency_stop">Emergency Stop (Pump)</option>
+                                    <option value="emergency_close">Emergency Close (Valve)</option>
+                                    <option value="reduce_power">Reduce Power (Pump)</option>
+                                    <option value="increase_power">Increase Power (Pump)</option>
+                                </select>
+                                <div id="conditionalActionParams"></div>
+                            </div>
+                            <!-- Add Button -->
+                            <div class="flex items-end">
+                                 <button onclick="addConditionalAction()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg w-full">Add Conditional Action</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 class="text-lg font-semibold mt-6 mb-2">Defined Rules</h3>
+                     <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Condition</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="conditionalActionsTable" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Cyber-Physical Attacks Tab -->
+                <div id="attacks" class="tab-content mt-6">
+                    <h2 class="text-xl font-semibold mb-4">Cyber-Physical Attack Scenarios</h2>
+                     <div class="flex space-x-2 mb-4">
+                        <button onclick="document.getElementById('importAttacksInput').click()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg flex-1">Import Scenarios</button>
+                        <input type="file" id="importAttacksInput" class="hidden" accept=".json" onchange="importAttackScenarios(event)">
+                        <button onclick="exportAttackScenarios()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg flex-1">Export Scenarios</button>
+                    </div>
+
+                    <div class="space-y-6">
+                        <!-- Chemical Dosing Attack -->
+                        <div class="p-4 border rounded-lg">
+                            <h3 class="font-semibold mb-2">Chemical Dosing (pH Attack)</h3>
+                             <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                                <input type="number" id="cdTime" placeholder="Time (s)" class="rounded-md p-2">
+                                <select id="cdComponent" class="rounded-md p-2"></select>
+                                <select id="cdChemicalType" class="rounded-md p-2">
+                                    <option value="acid">Acid (e.g., H₂SO₄)</option>
+                                    <option value="base">Base (e.g., NaOH)</option>
+                                </select>
+                                <input type="number" id="cdAmount" placeholder="ΔpH" class="rounded-md p-2" step="0.1">
+                                <button onclick="addAttack('chemical_dosing')" class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg">Add</button>
+                            </div>
+                        </div>
+                        <!-- Chemical Interference -->
+                        <div class="p-4 border rounded-lg">
+                            <h3 class="font-semibold mb-2">Chemical Interference</h3>
+                             <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                                <input type="number" id="ciTime" placeholder="Time (s)" class="rounded-md p-2">
+                                <select id="ciComponent" class="rounded-md p-2"></select>
+                                <select id="ciChemical" class="rounded-md p-2">
+                                    <option value="BODn">BODn</option>
+                                    <option value="O2">O2</option>
+                                    <option value="nitrate">Nitrate</option>
+                                    <option value="CO2">CO2</option>
+                                </select>
+                                <input type="number" id="ciAmount" placeholder="Δmg/L" class="rounded-md p-2">
+                                <button onclick="addAttack('chemical_interference')" class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg">Add</button>
+                            </div>
+                        </div>
+                        <!-- Physical Damage -->
+                        <div class="p-4 border rounded-lg">
+                            <h3 class="font-semibold mb-2">Physical Damage</h3>
+                             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                                <input type="number" id="pdTime" placeholder="Time (s)" class="rounded-md p-2">
+                                <select id="pdComponent" class="rounded-md p-2"></select>
+                                <select id="pdType" class="rounded-md p-2">
+                                    <option value="leak">Tank Leak</option>
+                                    <option value="pump_failure">Pump Failure</option>
+                                    <option value="valve_stuck">Valve Stuck</option>
+                                </select>
+                                <button onclick="addAttack('physical_damage')" class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg">Add</button>
+                            </div>
+                        </div>
+                        <!-- Data Poisoning -->
+                        <div class="p-4 border rounded-lg">
+                            <h3 class="font-semibold mb-2">Data Poisoning</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+                                <input type="number" id="dpTime" placeholder="Start Time (s)" class="rounded-md p-2">
+                                <input type="number" id="dpDuration" placeholder="Duration (s)" class="rounded-md p-2">
+                                <select id="dpComponent" class="rounded-md p-2"></select>
+                                <select id="dpSensor" class="rounded-md p-2">
+                                    <option value="waterLevel">Water Level</option>
+                                    <option value="temperature">Temperature</option>
+                                    <option value="ph">pH</option>
+                                    <option value="o2">O2</option>
+                                    <option value="bodn">BODn</option>
+                                    <option value="nitrate">Nitrate</option>
+                                    <option value="co2">CO2</option>
+                                </select>
+                                <input type="number" id="dpValue" placeholder="Fake Value" class="rounded-md p-2">
+                                <button onclick="addAttack('data_poisoning')" class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg">Add</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 class="text-lg font-semibold mt-6 mb-2">Scheduled Attacks</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time (s)</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Component</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="attacksTable" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="tankModal" class="modal">
+        <div class="modal-content">
+            <span onclick="closeTankModal()" class="close float-right text-2xl font-bold cursor-pointer">&times;</span>
+            <h2 class="text-xl font-semibold mb-4">Select Tank Type</h2>
+            <div class="grid grid-cols-3 gap-4">
+                <button onclick="addComponent('tank', {shape: 'cylindrical'})" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Cylindrical</button>
+                <button onclick="addComponent('tank', {shape: 'rectangular'})" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Rectangular</button>
+                <button onclick="addComponent('tank', {shape: 'spherical'})" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Spherical</button>
+            </div>
+        </div>
+    </div>
+    <div id="connectivityModal" class="modal">
+        <div class="modal-content" style="max-width: 90%; max-height: 80vh; overflow-y: auto;">
+            <span onclick="closeConnectivityModal()" class="close float-right text-2xl font-bold cursor-pointer">&times;</span>
+            <h2 class="text-xl font-semibold mb-4">Connectivity Matrix</h2>
+            <p class="text-sm text-gray-600 mb-4">Check the boxes to create connections between components. Rows = From, Columns = To.</p>
+            
+            <div class="overflow-x-auto">
+                <div id="connectivityMatrix" class="min-w-full">
+                    <!-- Matrix will be generated here -->
+                </div>
+            </div>
+            
+            <div class="mt-6 flex justify-between items-center">
+                <button onclick="clearAllConnections()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg">Clear All</button>
+                <button onclick="closeConnectivityModal()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">Close</button>
+            </div>
+        </div>
+    </div>
+    <div id="selectionModal" class="modal">
+        <div class="modal-content" style="width: 300px; margin-top: 20%;">
+            <span onclick="closeSelectionModal()" class="close float-right text-2xl font-bold cursor-pointer">&times;</span>
+            <h2 class="text-xl font-semibold mb-4">Selected: <span id="selectedComponentId"></span></h2>
+            <div class="space-y-2">
+                <button onclick="openEditModal()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg w-full">Edit Component</button>
+                <button onclick="deleteSelectedComponent()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg w-full">Delete Component</button>
+            </div>
+        </div>
+    </div>
+    <div id="editModal" class="modal">
+        <div class="modal-content" style="width: 400px;">
+            <span onclick="closeEditModal()" class="close float-right text-2xl font-bold cursor-pointer">&times;</span>
+            <h2 class="text-xl font-semibold mb-4">Edit Component</h2>
+            <input type="hidden" id="originalComponentId">
+            <div class="space-y-4">
+                <div>
+                    <label for="editComponentId" class="block text-sm font-medium text-gray-700">Component ID</label>
+                    <input type="text" id="editComponentId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                </div>
+                <div id="editComponentProperties" class="space-y-2">
+                    <!-- Dynamic properties will be injected here -->
+                </div>
+                <button onclick="saveComponentChanges()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg w-full">Save Changes</button>
+            </div>
+        </div>
+    </div>
+    <div id="editTimedActionModal" class="modal">
+        <div class="modal-content" style="width: 500px;">
+            <span onclick="closeEditTimedActionModal()" class="close float-right text-2xl font-bold cursor-pointer">&times;</span>
+            <h2 class="text-xl font-semibold mb-4">Edit Timed Action</h2>
+            <input type="hidden" id="editControlActionIndex">
+            <div class="space-y-4">
+                <div>
+                    <label for="editControlTime" class="block text-sm font-medium text-gray-700">Time (s)</label>
+                    <input type="number" id="editControlTime" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                </div>
+                <div>
+                    <label for="editControlComponent" class="block text-sm font-medium text-gray-700">Component</label>
+                    <select id="editControlComponent" onchange="handleEditControlComponentChange()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2"></select>
+                </div>
+                <div>
+                    <label for="editControlAction" class="block text-sm font-medium text-gray-700">Action</label>
+                    <select id="editControlAction" onchange="updateEditControlActionParams()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                        <option value="set_pump_power">Set Pump Power</option>
+                        <option value="set_valve_state">Set Valve State</option>
+                        <option value="set_valve_flow">Set Valve Flow</option>
+                    </select>
+                </div>
+                <div id="editControlActionParams"></div>
+                <button onclick="saveTimedActionChanges()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg w-full">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="acwa-logic.js"></script>
+    <script src="dist/acwa-engine.js"></script>
+    <script src="acwa.js"></script>
+    
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-6 mt-8">
+        <div class="container mx-auto px-4">
+            <div class="text-center">
+                <p class="text-sm text-gray-300 mb-2">
+                    Developed by 
+                    <a href="https://www.linkedin.com/in/oguzyardimci/" target="_blank" class="text-blue-400 hover:text-blue-300 underline">Mehmet Oguz Yardimci</a> 
+                    @ 
+                    <a href="https://ai.bse.vt.edu/" target="_blank" class="text-blue-400 hover:text-blue-300 underline">A3 Lab</a>, 
+                    and 
+                    <a href="https://ai.bse.vt.edu/ACWA_Lab.html" target="_blank" class="text-blue-400 hover:text-blue-300 underline">ACWA Lab</a>
+                </p>
+                <p class="text-xs text-gray-400">
+                    Virginia Polytechnic Institute and State University
+                </p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

@@ -28,8 +28,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -44,20 +44,19 @@ jobs:
         run: |
           mkdir -p docs
           cp -r src/* docs/
-          # Create .nojekyll to prevent Jekyll processing
+          cp src/index.html docs/index.html
           touch docs/.nojekyll
-          # Ensure dist files are included
           if [ ! -d "docs/dist" ]; then
             mkdir -p docs/dist
           fi
           cp -r src/dist/* docs/dist/ 2>/dev/null || true
+          ls -la docs/index.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './docs'
+          path: "./docs"
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
