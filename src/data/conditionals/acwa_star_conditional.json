@@ -1,0 +1,251 @@
+[
+  {
+    "source": {
+      "componentId": "central_hub",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": ">",
+      "threshold": 15
+    },
+    "target": {
+      "componentId": "reservoir_pump",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "60"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "central_hub",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": ">",
+      "threshold": 18
+    },
+    "target": {
+      "componentId": "reservoir_pump",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "25"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "central_hub",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 8
+    },
+    "target": {
+      "componentId": "reservoir_pump",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "85"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "central_hub",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 4
+    },
+    "target": {
+      "componentId": "reservoir_pump",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "100"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "reservoir_tank",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 1.5
+    },
+    "target": {
+      "componentId": "reservoir_pump",
+      "actionType": "emergency_stop",
+      "params": {}
+    }
+  },
+  {
+    "source": {
+      "componentId": "peripheral_tank_1",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": ">",
+      "threshold": 9
+    },
+    "target": {
+      "componentId": "dist_pump_1",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "60"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "peripheral_tank_1",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": ">",
+      "threshold": 10.8
+    },
+    "target": {
+      "componentId": "dist_pump_1",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "25"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "peripheral_tank_1",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 4.8
+    },
+    "target": {
+      "componentId": "dist_pump_1",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "85"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "peripheral_tank_1",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 2.4
+    },
+    "target": {
+      "componentId": "dist_pump_1",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "100"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "central_hub",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 2
+    },
+    "target": {
+      "componentId": "dist_pump_1",
+      "actionType": "emergency_stop",
+      "params": {}
+    }
+  },
+  {
+    "source": {
+      "componentId": "peripheral_tank_3",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": ">",
+      "threshold": 9
+    },
+    "target": {
+      "componentId": "dist_pump_2",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "60"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "peripheral_tank_3",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": ">",
+      "threshold": 10.8
+    },
+    "target": {
+      "componentId": "dist_pump_2",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "25"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "peripheral_tank_3",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 4.8
+    },
+    "target": {
+      "componentId": "dist_pump_2",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "85"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "peripheral_tank_3",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 2.4
+    },
+    "target": {
+      "componentId": "dist_pump_2",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "100"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "central_hub",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 2
+    },
+    "target": {
+      "componentId": "dist_pump_2",
+      "actionType": "emergency_stop",
+      "params": {}
+    }
+  }
+]

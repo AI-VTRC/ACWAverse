@@ -346,14 +346,12 @@ let currentLayout = 'balanced';
 let layoutDirection = 'vertical'; // 'vertical' or 'horizontal'
 let currentZoom = 1; // 1.0 = 100%
 
-//don't test this
 function changeLayout() {
     const selector = document.getElementById('layoutSelector');
     currentLayout = selector.value;
     updateVisualization();
 }
 
-//don't test this
 function setLayoutDirection(dir) {
     if (dir !== 'vertical' && dir !== 'horizontal') return;
     layoutDirection = dir;
@@ -375,7 +373,6 @@ function setLayoutDirection(dir) {
     updateVisualization();
 }
 
-//don't test this
 function orientPositions(positions) {
     if (layoutDirection === 'vertical') return positions;
     const oriented = {};
@@ -386,7 +383,6 @@ function orientPositions(positions) {
     return oriented;
 }
 
-//don't test this
 function setZoom(valuePercent) {
     const content = document.getElementById('network-visualizer-content');
     const label = document.getElementById('zoomLabel');
@@ -401,7 +397,6 @@ function setZoom(valuePercent) {
     }
 }
 
-//don't test this
 function createComponentVisual(component, index) {
     const content = document.getElementById('network-visualizer-content');
     if (!content) return;
@@ -436,7 +431,6 @@ function createComponentVisual(component, index) {
     content.appendChild(node);
 }
 
-//don't test this
 function updateLayoutInfo() {
     const layoutInfo = document.getElementById('layout-info');
     if (layoutInfo && network.components) {
@@ -455,7 +449,6 @@ function updateLayoutInfo() {
     }
 }
 
-//don't test this
 function createPipeVisual(pipe) {
     const content = document.getElementById('network-visualizer-content');
     if (!content) return;
@@ -511,16 +504,9 @@ function createPipeVisual(pipe) {
     const arrow = document.createElement('div');
     arrow.className = 'pipe-arrow';
     
-    // The arrow is created using CSS borders pointing right
-    // We need to position it so the tip touches the component border
     const arrowWidth = 10; // Width of the arrow (border-left width)
     const arrowHeight = 10; // Height of the arrow (border-top + border-bottom)
-    
-    // Calculate the position for the arrow base (left edge) so the tip touches the component border
-    // The arrow points in the direction of the line, so we need to position it accordingly
-    
-    // Calculate the position of the arrow base (left edge) so the tip touches the border
-    // We need to move back from the border point in the direction of the line
+
     const angleRad = newAngle * Math.PI / 180;
     const arrowBaseX = endX - arrowWidth * Math.cos(angleRad);
     const arrowBaseY = endY - arrowWidth * Math.sin(angleRad);
@@ -548,15 +534,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateConditionalActionParams();
     
     // Try to load samples from external JSON manifest
+    // Use relative path that works on both localhost and GitHub Pages
+    const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
     try {
-        const res = await fetch('data/manifest.json', { cache: 'no-store' });
+        const res = await fetch(`${basePath}data/manifest.json`, { cache: 'no-store' });
         if (res.ok) {
             const manifest = await res.json();
             if (manifest && Array.isArray(manifest.samples)) {
                 const loaded = [];
                 for (const entry of manifest.samples) {
                     try {
-                        const r = await fetch(`data/${entry.file}`, { cache: 'no-store' });
+                        const r = await fetch(`${basePath}data/${entry.file}`, { cache: 'no-store' });
                         if (r.ok) {
                             const sys = await r.json();
                             loaded.push(sys);
@@ -592,7 +580,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-//don't test this
 function populateSampleSystemsList() {
     const select = document.getElementById('sampleSystemsList');
     select.innerHTML = '';
@@ -604,7 +591,6 @@ function populateSampleSystemsList() {
     });
 }
 
-//don't test this
 function loadSelectedSampleSystem() {
     const selectedIndex = document.getElementById('sampleSystemsList').value;
     if (selectedIndex >= 0 && selectedIndex < sampleSystems.length) {
@@ -612,7 +598,6 @@ function loadSelectedSampleSystem() {
     }
 }
 
-//don't test this
 function createNewSystem() {
     const newSystem = {
         name: "New Untitled System",
@@ -625,10 +610,8 @@ function createNewSystem() {
     loadSystem(newSystem);
 }
 
-//don't test this
 function loadSystem(systemData) {
     systemName = systemData.name || "Untitled System";
-    console.log('Loading system:', systemName); // Debug log
     network = systemData.network || { components: [], pipes: [] };
     controlActions = systemData.controlActions || [];
     conditionalActions = systemData.conditionalActions || [];
@@ -682,7 +665,6 @@ function loadSystem(systemData) {
     resetAnalysisTab();
     
     document.getElementById('system-name-display').textContent = systemName;
-    console.log('Updated system name display to:', systemName); // Debug log
 }
 
 function showMainSimulatorView() {
@@ -695,7 +677,6 @@ function showSystemManagementView() {
     document.getElementById('main-simulator-view').style.display = 'none';
 }
 
-//don't test this
 function setActiveTab(tabName) {
     document.querySelectorAll(".tab-content").forEach(el => {
         el.style.display = "none";
@@ -721,7 +702,6 @@ function setActiveTab(tabName) {
     }
 }
 
-//don't test this
 function changeTab(event, tabName) {
     setActiveTab(tabName);
     if (event && event.currentTarget) {
@@ -729,7 +709,6 @@ function changeTab(event, tabName) {
     }
 }
 
-//don't test this
 function addComponent(type, options = {}) {
     if (!componentCounter[type]) componentCounter[type] = 1;
     const id = `${type}_${componentCounter[type]++}`;
@@ -763,24 +742,19 @@ function addComponent(type, options = {}) {
     resetAnalysisTab();
 }
 
-//don't test this
 function openTankModal() { document.getElementById('tankModal').style.display = 'block'; }
 
-//don't test this
 function closeTankModal() { document.getElementById('tankModal').style.display = 'none'; }
 
-//don't test this
 function openConnectivityModal() {
     generateConnectivityMatrix();
     document.getElementById('connectivityModal').style.display = 'block';
 }
 
-//don't test this
 function closeConnectivityModal() { 
     document.getElementById('connectivityModal').style.display = 'none'; 
 }
 
-//don't test this
 function generateConnectivityMatrix() {
     const matrixContainer = document.getElementById('connectivityMatrix');
     if (!network.components || network.components.length === 0) {
@@ -842,7 +816,6 @@ function generateConnectivityMatrix() {
     matrixContainer.appendChild(table);
 }
 
-//don't test this
 function handleConnectionChange(fromId, toId, isConnected) {
     if (isConnected) {
         // Add connection
@@ -860,7 +833,6 @@ function handleConnectionChange(fromId, toId, isConnected) {
     resetAnalysisTab();
 }
 
-//don't test this
 function clearAllConnections() {
     network.pipes = [];
     updateVisualization();
@@ -868,7 +840,6 @@ function clearAllConnections() {
     generateConnectivityMatrix(); // Refresh the matrix
 }
 
-//don't test this
 function deleteSelectedComponent() {
     const componentId = document.getElementById('selectedComponentId').textContent;
     if (!componentId) return;
@@ -888,14 +859,12 @@ function deleteSelectedComponent() {
     closeSelectionModal();
 }
 
-//don't test this
 function updatePipeList() {
     // Update pipe-related UI elements if they exist
     // This function exists to prevent errors when called from other functions
     // console.log('Pipe list updated - pipes:', network.pipes.length);
 }
 
-//don't test this
 function updateAllDropdowns() {
     const selects = [
         document.getElementById('controlComponent'), 
@@ -1017,7 +986,6 @@ function updatePhysicalDamageOptions() {
     }
 }
 
-//don't test this
 function updateInitialConditions() {
     const container = document.getElementById('initial-conditions-container');
     container.innerHTML = '';
@@ -1877,10 +1845,15 @@ function renderAnalysisCharts() {
     parameters.forEach(param => {
         const comp = network.components.find(c => c.id === componentId);
         const dataKey = `${componentId}_${param}`;
+        const reportedKey = `${componentId}_${param}_reported`;
 
         if (!lastSimulationResults[0].hasOwnProperty(dataKey)) return;
 
         const chartData = lastSimulationResults.map(d => d[dataKey]);
+        const reportedData = lastSimulationResults.map(d => d[reportedKey]);
+        
+        // Check if there are any reported (poisoned) values
+        const hasReportedData = reportedData.some(v => v !== undefined);
         
         const canvasContainer = document.createElement('div');
         canvasContainer.className = 'bg-gray-50 p-4 rounded-lg';
@@ -1888,17 +1861,34 @@ function renderAnalysisCharts() {
         canvasContainer.appendChild(canvas);
         chartsContainer.appendChild(canvasContainer);
 
+        const datasets = [{
+            label: `${componentId} - ${param} (Actual)`,
+            data: chartData,
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.1,
+            pointRadius: 0
+        }];
+
+        // Add reported (poisoned) values dataset if they exist
+        if (hasReportedData) {
+            datasets.push({
+                label: `${componentId} - ${param} (Reported/Poisoned)`,
+                data: reportedData.map((v, i) => v !== undefined ? v : null),
+                borderColor: 'rgb(239, 68, 68)',
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                borderDash: [5, 5],
+                tension: 0.1,
+                pointRadius: 0,
+                spanGaps: false
+            });
+        }
+
         const newChart = new Chart(canvas, {
             type: 'line',
             data: {
                 labels: timeData,
-                datasets: [{
-                    label: `${componentId} - ${param}`,
-                    data: chartData,
-                    borderColor: 'rgb(59, 130, 246)',
-                    tension: 0.1,
-                    pointRadius: 0
-                }]
+                datasets: datasets
             },
             options: {
                 scales: { 
@@ -1907,7 +1897,28 @@ function renderAnalysisCharts() {
                 },
                 plugins: {
                     title: { display: true, text: `${param.charAt(0).toUpperCase() + param.slice(1)} Over Time` },
-                    annotation: { annotations: annotations }
+                    annotation: { annotations: annotations },
+                    legend: { 
+                        display: true,
+                        labels: {
+                            usePointStyle: false,
+                            boxWidth: 20,
+                            boxHeight: 1,
+                            padding: 10,
+                            generateLabels: function(chart) {
+                                const original = Chart.defaults.plugins.legend.labels.generateLabels;
+                                const labels = original(chart);
+                                labels.forEach(label => {
+                                    // Make the legend show as a line segment instead of a box
+                                    label.fillStyle = 'transparent';
+                                    label.strokeStyle = chart.data.datasets[label.datasetIndex].borderColor;
+                                    label.lineWidth = chart.data.datasets[label.datasetIndex].borderWidth || 2;
+                                    label.lineDash = chart.data.datasets[label.datasetIndex].borderDash || [];
+                                });
+                                return labels;
+                            }
+                        }
+                    }
                 }
             }
         });
@@ -1945,7 +1956,11 @@ function startSimulation() {
             comp.power = Math.max(0, Math.min(100, Number.isFinite(comp.power) ? comp.power : 0));
         }
         if (comp.type === 'valve') {
-            comp.isOpen = comp.isOpen !== false;
+            const opening = typeof comp.opening === 'number'
+                ? Math.max(0, Math.min(1, comp.opening))
+                : (comp.isOpen === false ? 0 : 1);
+            comp.opening = opening;
+            comp.isOpen = opening > 1e-6;
             if (!Number.isFinite(comp.flowRate)) comp.flowRate = 0;
             if (!comp.isOpen) comp.flowRate = 0;
         }
@@ -2088,17 +2103,66 @@ function exportResults() {
         console.error("No simulation data to export.");
         return;
     }
+    
+    // Collect all field names
     const fieldSet = new Set();
     lastSimulationResults.forEach(row => {
         Object.keys(row).forEach(key => fieldSet.add(key));
     });
     const allFields = Array.from(fieldSet);
+    
+    // Organize fields: time first, then active_attacks, then component fields grouped together
     const orderedFields = [];
+    
+    // Always include time first
     if (fieldSet.has('time')) orderedFields.push('time');
+    
+    // Include attack labels second
     if (fieldSet.has('active_attacks')) orderedFields.push('active_attacks');
+    
+    // Group component fields: for each component, list actual values first, then reported values
+    const componentFields = {};
+    const reportedFields = [];
+    
     allFields.forEach(field => {
-        if (!orderedFields.includes(field)) orderedFields.push(field);
+        if (field === 'time' || field === 'active_attacks') return;
+        
+        if (field.endsWith('_reported')) {
+            reportedFields.push(field);
+        } else {
+            // Store actual fields
+            componentFields[field] = { actualField: field, reportedField: null };
+        }
     });
+    
+    // Match reported fields with their actual fields
+    reportedFields.forEach(reportedField => {
+        const actualField = reportedField.replace('_reported', '');
+        if (componentFields[actualField]) {
+            componentFields[actualField].reportedField = reportedField;
+        } else {
+            // If actual field not found, add it anyway (shouldn't happen, but handle gracefully)
+            componentFields[actualField] = { actualField, reportedField };
+        }
+    });
+    
+    // Add all component fields: actual first, then reported (if exists)
+    Object.values(componentFields).forEach(({ actualField, reportedField }) => {
+        if (!orderedFields.includes(actualField)) {
+            orderedFields.push(actualField);
+        }
+        if (reportedField && !orderedFields.includes(reportedField)) {
+            orderedFields.push(reportedField);
+        }
+    });
+    
+    // Add any remaining fields that weren't categorized
+    allFields.forEach(field => {
+        if (!orderedFields.includes(field)) {
+            orderedFields.push(field);
+        }
+    });
+    
     const csv = Papa.unparse(lastSimulationResults, { columns: orderedFields });
     const blob = new Blob([csv], {type: "text/csv;charset=utf-8;"});
     const a = document.createElement('a');

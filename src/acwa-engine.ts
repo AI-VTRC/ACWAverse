@@ -165,6 +165,7 @@
     type: ComponentType.Valve;
     isOpen?: boolean;
     flowRate?: number;
+    opening?: number;
   }
 
   interface SourceComponent extends BaseComponent, ChemistryCarrier {
@@ -335,8 +336,16 @@
 
   function deepCopy<T>(obj: T): T { return JSON.parse(JSON.stringify(obj)); }
 
+  function valveOpening(comp: Component | undefined): number {
+    if (!comp || comp.type !== ComponentType.Valve) return 1;
+    if (typeof comp.opening === 'number'){
+      return Math.max(0, Math.min(1, comp.opening));
+    }
+    return comp.isOpen === false ? 0 : 1;
+  }
+
   function isValveOpen(comp: Component): boolean {
-    return comp.type !== ComponentType.Valve || comp.isOpen !== false;
+    return comp.type !== ComponentType.Valve || valveOpening(comp) > 1e-6;
   }
 
   function nextOutgoingFrom(simNetwork: SimulationNetwork, componentId: string): Pipe | undefined {
@@ -569,14 +578,38 @@
       comp.power = Math.max(0, Math.min(100, isFinite(powerValue) ? powerValue : 0));
     }
     if (action.actionType === TimedActionType.SetValveState && comp.type === ComponentType.Valve){
-      const desired = String(action.params.state ?? '').toLowerCase();
-      comp.isOpen = desired === 'open';
-      if (!comp.isOpen) comp.flowRate = 0;
+      const raw = String(action.params.state ?? '').toLowerCase();
+      if (raw.endsWith('%')){
+        const pct = parseFloat(raw);
+        if (!Number.isNaN(pct)){
+          comp.opening = Math.max(0, Math.min(1, pct / 100));
+          comp.isOpen = comp.opening > 1e-6;
+          if (!comp.isOpen) comp.flowRate = 0;
+        }
+      } else {
+        const numeric = parseFloat(raw);
+        if (!Number.isNaN(numeric)){
+          const opening = Math.max(0, Math.min(1, numeric > 1 ? numeric / 100 : numeric));
+          comp.opening = opening;
+          comp.isOpen = opening > 1e-6;
+          if (!comp.isOpen) comp.flowRate = 0;
+        } else {
+          comp.isOpen = raw === 'open';
+          comp.opening = comp.isOpen ? 1 : 0;
+          if (!comp.isOpen) comp.flowRate = 0;
+        }
+      }
     }
     if (action.actionType === TimedActionType.SetValveFlow && comp.type === ComponentType.Valve){
       const flow = parseFloat(action.params.flowRate ?? '0');
-      comp.flowRate = isFinite(flow) ? flow : 0;
-      comp.isOpen = (comp.flowRate ?? 0) > 0;
+      const numericFlow = isFinite(flow) ? flow : 0;
+      comp.flowRate = numericFlow;
+      comp.isOpen = numericFlow > 0;
+      if (typeof comp.maxFlowRate === 'number' && comp.maxFlowRate > 0){
+        comp.opening = Math.max(0, Math.min(1, Math.abs(numericFlow) / comp.maxFlowRate));
+      } else {
+        comp.opening = comp.isOpen ? 1 : 0;
+      }
     }
   }
 
@@ -609,6 +642,7 @@
         if (attack.damageType === 'valve_stuck' && comp.type === ComponentType.Valve){ 
           comp.isOpen = false; 
           comp.flowRate = 0; 
+          comp.opening = 0;
           comp.stuck = true; // Prevent future control until manual reset
         }
         if (attack.damageType === 'leak' && comp.type === ComponentType.Tank){ 
@@ -676,6 +710,7 @@
           if (targetComp.type === ComponentType.Valve){
             targetComp.isOpen = false;
             targetComp.flowRate = 0;
+            targetComp.opening = 0;
           }
           break;
         case ConditionalActionType.ReducePower: 
@@ -694,9 +729,27 @@
           break;
         case ConditionalActionType.SetValveState:
           if (targetComp.type === ComponentType.Valve){
-            const desired = String(params.state ?? '').toLowerCase();
-            targetComp.isOpen = desired === 'open';
-            if (!targetComp.isOpen) targetComp.flowRate = 0;
+            const raw = String(params.state ?? '').toLowerCase();
+            if (raw.endsWith('%')){
+              const pct = parseFloat(raw);
+              if (!Number.isNaN(pct)){
+                targetComp.opening = Math.max(0, Math.min(1, pct / 100));
+                targetComp.isOpen = targetComp.opening > 1e-6;
+                if (!targetComp.isOpen) targetComp.flowRate = 0;
+              }
+            } else {
+              const numeric = parseFloat(raw);
+              if (!Number.isNaN(numeric)){
+                const opening = Math.max(0, Math.min(1, numeric > 1 ? numeric / 100 : numeric));
+                targetComp.opening = opening;
+                targetComp.isOpen = opening > 1e-6;
+                if (!targetComp.isOpen) targetComp.flowRate = 0;
+              } else {
+                targetComp.isOpen = raw === 'open';
+                targetComp.opening = targetComp.isOpen ? 1 : 0;
+                if (!targetComp.isOpen) targetComp.flowRate = 0;
+              }
+            }
           }
           break;
         case ConditionalActionType.SetValveFlow:
@@ -705,6 +758,11 @@
             const rate = isFinite(flowRate) ? flowRate : 0;
             targetComp.flowRate = rate;
             targetComp.isOpen = rate > 0;
+            if (typeof targetComp.maxFlowRate === 'number' && targetComp.maxFlowRate > 0){
+              targetComp.opening = Math.max(0, Math.min(1, Math.abs(rate) / targetComp.maxFlowRate));
+            } else {
+              targetComp.opening = targetComp.isOpen ? 1 : 0;
+            }
           }
           break;
       }
@@ -744,7 +802,18 @@
       const maxFlowRated = Math.max(0, pump.maxFlowRate || 0);
       const powerFactor = Math.max(0, Math.min(1, pump.power / 100));
       const efficiency = (pump.efficiency !== undefined) ? Math.max(0, Math.min(1, pump.efficiency)) : 1.0;
-      let maxFlow = maxFlowRated * powerFactor * efficiency;
+      const inFromComp = simNetwork.components.find(c => c.id === inPipe.from);
+      const inToComp = simNetwork.components.find(c => c.id === inPipe.to);
+      const outFromComp = simNetwork.components.find(c => c.id === outPipe.from);
+      const outToComp = simNetwork.components.find(c => c.id === outPipe.to);
+      const valveFactor = Math.min(
+        valveOpening(inFromComp),
+        valveOpening(inToComp),
+        valveOpening(outFromComp),
+        valveOpening(outToComp)
+      );
+      if (valveFactor <= 1e-6) return;
+      let maxFlow = maxFlowRated * powerFactor * efficiency * valveFactor;
       if (typeof pump.maxThroughput === 'number') maxFlow = Math.min(maxFlow, pump.maxThroughput);
       if (maxFlow <= 0) return;
 
@@ -794,7 +863,8 @@
       const toComp = simNetwork.components.find(c => c.id === pipe.to);
       if (!fromComp || !toComp) return;
       if (fromComp.type === ComponentType.Pump || toComp.type === ComponentType.Pump) return;
-      if ((fromComp.type === ComponentType.Valve && !isValveOpen(fromComp)) || (toComp.type === ComponentType.Valve && !isValveOpen(toComp))) return;
+      const valveFactor = Math.min(valveOpening(fromComp), valveOpening(toComp));
+      if (valveFactor <= 1e-6) return;
 
       let upstreamEntity = findSourceEntity(simNetwork, pipe.from);
       if (!upstreamEntity && fromComp.type === ComponentType.Source){
@@ -810,7 +880,7 @@
       const headDown = entityHead(downstreamEntity);
       if (headUp === undefined || headDown === undefined) return;
 
-      let flowRate = computeFlowRateFromHead(pipe, headUp - headDown);
+      let flowRate = computeFlowRateFromHead(pipe, headUp - headDown) * valveFactor;
       if (Math.abs(flowRate) < 1e-12) return;
 
       const direction = flowRate >= 0 ? 1 : -1;
@@ -998,9 +1068,47 @@
     (attacksAtT || []).forEach(a => applyAttack(simNetwork, a));
     applyConditionalActions(simNetwork, rules || [], t);
     clearExpiredPoisoning(simNetwork, t);
-    applyPumpTransfers(simNetwork, timeStep);
-    applyPassiveFlows(simNetwork, timeStep);
-    updateTanks(simNetwork, ambientTemp, timeStep);
+    
+    // Iterative hydraulic solver: solve network continuity and energy relations iteratively
+    // The solver iterates to refine flow calculations based on updated head distribution
+    // This ensures mass balance at junctions and energy balance around loops
+    const tanks = simNetwork.components.filter((c): c is TankComponent => c.type === ComponentType.Tank);
+    
+    const needsIteration = tanks.length > 1 && simNetwork.pipes.some(p => {
+      const fromTank = tanks.find(t => t.id === p.from);
+      const toTank = tanks.find(t => t.id === p.to);
+      return fromTank && toTank;
+    });
+    
+    const maxIterations = needsIteration ? 3 : 1;
+    const convergenceTolerance = 1e-2;
+    
+    const initialWaterAmounts = tanks.map(t => t.waterAmount);
+    
+    for (let iter = 0; iter < maxIterations; iter++){
+      const prevWaterAmounts = tanks.map(t => t.waterAmount);
+      
+      applyPumpTransfers(simNetwork, timeStep);
+      applyPassiveFlows(simNetwork, timeStep);
+      updateTanks(simNetwork, ambientTemp, timeStep);
+      
+      let maxChange = 0;
+      tanks.forEach((tank, idx) => {
+        const change = Math.abs(tank.waterAmount - prevWaterAmounts[idx]);
+        if (change > maxChange) maxChange = change;
+      });
+      
+      if (maxChange < convergenceTolerance * timeStep) break;
+      
+      if (iter < maxIterations - 1 && needsIteration) {
+        tanks.forEach((tank, idx) => {
+          tank.waterAmount = initialWaterAmounts[idx];
+        });
+        updateTanks(simNetwork, ambientTemp, 0);
+      }
+    }
+    
+    // Apply water quality kinetics after hydraulic convergence
     applyTankKinetics(simNetwork, timeStep);
     return recordStep(simNetwork, t, { attacksAtT: attacksAtT || [] });
   }

@@ -1,0 +1,251 @@
+[
+  {
+    "source": {
+      "componentId": "water_tower",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": ">",
+      "threshold": 112.5
+    },
+    "target": {
+      "componentId": "north_booster",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "60"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "water_tower",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": ">",
+      "threshold": 135
+    },
+    "target": {
+      "componentId": "north_booster",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "25"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "water_tower",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 60
+    },
+    "target": {
+      "componentId": "north_booster",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "85"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "water_tower",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 30
+    },
+    "target": {
+      "componentId": "north_booster",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "100"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "ground_tank_1",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 5
+    },
+    "target": {
+      "componentId": "north_booster",
+      "actionType": "emergency_stop",
+      "params": {}
+    }
+  },
+  {
+    "source": {
+      "componentId": "water_tower",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": ">",
+      "threshold": 112.5
+    },
+    "target": {
+      "componentId": "middle_booster",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "60"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "water_tower",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": ">",
+      "threshold": 135
+    },
+    "target": {
+      "componentId": "middle_booster",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "25"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "water_tower",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 60
+    },
+    "target": {
+      "componentId": "middle_booster",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "85"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "water_tower",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 30
+    },
+    "target": {
+      "componentId": "middle_booster",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "100"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "ground_tank_1",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 5
+    },
+    "target": {
+      "componentId": "middle_booster",
+      "actionType": "emergency_stop",
+      "params": {}
+    }
+  },
+  {
+    "source": {
+      "componentId": "water_tower",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": ">",
+      "threshold": 112.5
+    },
+    "target": {
+      "componentId": "south_booster",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "60"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "water_tower",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": ">",
+      "threshold": 135
+    },
+    "target": {
+      "componentId": "south_booster",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "25"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "water_tower",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 60
+    },
+    "target": {
+      "componentId": "south_booster",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "85"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "water_tower",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 30
+    },
+    "target": {
+      "componentId": "south_booster",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "100"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "ground_tank_1",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 5
+    },
+    "target": {
+      "componentId": "south_booster",
+      "actionType": "emergency_stop",
+      "params": {}
+    }
+  }
+]

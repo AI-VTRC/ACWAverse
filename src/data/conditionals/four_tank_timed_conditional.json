@@ -1,0 +1,334 @@
+[
+  {
+    "source": {
+      "componentId": "tank_2",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": ">",
+      "threshold": 7.5
+    },
+    "target": {
+      "componentId": "pump_1",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "60"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "tank_2",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": ">",
+      "threshold": 9
+    },
+    "target": {
+      "componentId": "pump_1",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "25"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "tank_2",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 4
+    },
+    "target": {
+      "componentId": "pump_1",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "85"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "tank_2",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 2
+    },
+    "target": {
+      "componentId": "pump_1",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "100"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "tank_1",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 1
+    },
+    "target": {
+      "componentId": "pump_1",
+      "actionType": "emergency_stop",
+      "params": {}
+    }
+  },
+  {
+    "source": {
+      "componentId": "tank_3",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": ">",
+      "threshold": 7.5
+    },
+    "target": {
+      "componentId": "pump_2",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "60"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "tank_3",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": ">",
+      "threshold": 9
+    },
+    "target": {
+      "componentId": "pump_2",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "25"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "tank_3",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 4
+    },
+    "target": {
+      "componentId": "pump_2",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "85"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "tank_3",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 2
+    },
+    "target": {
+      "componentId": "pump_2",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "100"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "tank_2",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 1
+    },
+    "target": {
+      "componentId": "pump_2",
+      "actionType": "emergency_stop",
+      "params": {}
+    }
+  },
+  {
+    "source": {
+      "componentId": "tank_4",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": ">",
+      "threshold": 7.5
+    },
+    "target": {
+      "componentId": "pump_3",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "60"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "tank_4",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": ">",
+      "threshold": 9
+    },
+    "target": {
+      "componentId": "pump_3",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "25"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "tank_4",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 4
+    },
+    "target": {
+      "componentId": "pump_3",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "85"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "tank_4",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 2
+    },
+    "target": {
+      "componentId": "pump_3",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "100"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "tank_3",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 1
+    },
+    "target": {
+      "componentId": "pump_3",
+      "actionType": "emergency_stop",
+      "params": {}
+    }
+  },
+  {
+    "source": {
+      "componentId": "tank_1",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": ">",
+      "threshold": 7.5
+    },
+    "target": {
+      "componentId": "pump_4",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "60"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "tank_1",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": ">",
+      "threshold": 9
+    },
+    "target": {
+      "componentId": "pump_4",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "25"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "tank_1",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 4
+    },
+    "target": {
+      "componentId": "pump_4",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "85"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "tank_1",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 2
+    },
+    "target": {
+      "componentId": "pump_4",
+      "actionType": "set_pump_power",
+      "params": {
+        "power": "100"
+      }
+    }
+  },
+  {
+    "source": {
+      "componentId": "tank_4",
+      "value": "waterLevel"
+    },
+    "condition": {
+      "operator": "<",
+      "threshold": 1
+    },
+    "target": {
+      "componentId": "pump_4",
+      "actionType": "emergency_stop",
+      "params": {}
+    }
+  }
+]

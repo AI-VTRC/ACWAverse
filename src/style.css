@@ -67,8 +67,8 @@ body {
     border-color: #b45309;
 }
 .component-node.valve { 
-    background: linear-gradient(135deg, #eab308, #ca8a04);
-    border-color: #a16207;
+    background: linear-gradient(135deg, #e5e7eb, #d1d5db) !important;
+    border-color: #9ca3af !important;
 }
 .component-node.junction { 
     background: linear-gradient(135deg, #6b7280, #4b5563);
@@ -161,7 +161,7 @@ body {
 
 .badge-source { background-color: #3b82f6; }
 .badge-pump { background-color: #f59e0b; }
-.badge-valve { background-color: #eab308; }
+.badge-valve { background-color: #d1d5db; }
 .badge-junction { background-color: #6b7280; }
 .badge-tank { background-color: #10b981; }
 .badge-sink { background-color: #ef4444; }

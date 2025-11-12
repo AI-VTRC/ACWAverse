@@ -40,27 +40,42 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
-      - name: Copy files to docs directory
+      - name: Copy files to deployment directory
         run: |
-          mkdir -p docs
-          cp -r src/* docs/
-          cp src/index.html docs/index.html
-          touch docs/.nojekyll
-          if [ ! -d "docs/dist" ]; then
-            mkdir -p docs/dist
+          mkdir -p deploy
+
+          cp -r src/* deploy/
+
+          if [ -d "src/dist" ]; then
+            mkdir -p deploy/dist
+            cp -r src/dist/* deploy/dist/ 2>/dev/null || true
           fi
-          cp -r src/dist/* docs/dist/ 2>/dev/null || true
-          echo "=== Verifying docs folder structure ==="
-          ls -la docs/
+
+          touch deploy/.nojekyll
+
+          echo "=== Verifying deployment structure ==="
+          ls -la deploy/
+          echo ""
           echo "=== Verifying index.html is at root ==="
-          ls -la docs/index.html
-          echo "=== Contents of docs folder ==="
-          find docs -type f -name "*.html" -o -name "*.js" -o -name "*.css" | head -20
+          if [ -f "deploy/index.html" ]; then
+            ls -lh deploy/index.html
+            echo "index.html found at deploy/index.html (will be root on GitHub Pages)"
+          else
+            echo "ERROR: index.html NOT found in deploy/"
+            exit 1
+          fi
+
+          echo ""
+          echo "=== Key files in deployment ==="
+          ls -1 deploy/*.{html,css,js} 2>/dev/null || echo "No matching files"
+          echo ""
+          echo "=== Directory structure ==="
+          find deploy -type f -name "*.html" -o -name "*.js" -o -name "*.css" | head -10
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "./docs"
+          path: "./deploy"
 
       - name: Deploy to GitHub Pages
         id: deployment

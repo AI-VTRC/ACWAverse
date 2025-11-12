@@ -29,7 +29,29 @@ async function main() {
   test('isValveOpen logic', () => {
     assert.strictEqual(E.isValveOpen({type:'valve', isOpen:false}), false);
     assert.strictEqual(E.isValveOpen({type:'valve', isOpen:true}), true);
+    assert.strictEqual(E.isValveOpen({type:'valve', opening:0}), false);
+    assert.strictEqual(E.isValveOpen({type:'valve', opening:0.5}), true);
     assert.strictEqual(E.isValveOpen({type:'junction'}), true);
+  });
+
+  test('partial valve opening reduces passive flow', () => {
+    const baseNetwork = (opening) => ({
+      components: [
+        { id:'t1', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:4, waterLevel:2, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5 },
+        { id:'v', type:'valve', opening, isOpen: opening > 0 },
+        { id:'t2', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:0, waterLevel:0, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5 }
+      ],
+      pipes: [
+        { from:'t1', to:'v' },
+        { from:'v', to:'t2' }
+      ]
+    });
+    const full = E.run(baseNetwork(1), [], [], [], 0, 20, 1);
+    const half = E.run(baseNetwork(0.5), [], [], [], 0, 20, 1);
+    const fullTransfer = full.results[0]['t2_waterAmount'];
+    const halfTransfer = half.results[0]['t2_waterAmount'];
+    assert.ok(halfTransfer > 0);
+    assert.ok(halfTransfer < fullTransfer);
   });
 
   test('getCurrentValue respects poisoning window', () => {
@@ -40,16 +62,18 @@ async function main() {
   });
 
   test('applyTimedControl sets pump power and valve state', () => {
-    const net = { components: [ { id:'p1', type:'pump', power:0 }, { id:'v1', type:'valve', isOpen:true, flowRate:1 } ], pipes: [] };
+    const net = { components: [ { id:'p1', type:'pump', power:0 }, { id:'v1', type:'valve', isOpen:true, flowRate:1, maxFlowRate:5 } ], pipes: [] };
     E.applyTimedControl(net, { componentId:'p1', actionType:'set_pump_power', params:{power:'80'} });
     assert.strictEqual(net.components[0].power, 80);
     E.applyTimedControl(net, { componentId:'v1', actionType:'set_valve_state', params:{state:'closed'} });
     assert.strictEqual(net.components[1].isOpen, false);
     assert.strictEqual(net.components[1].flowRate, 0);
+    assert.ok(approxEqual(net.components[1].opening, 0));
     // Test new set_valve_flow action
     E.applyTimedControl(net, { componentId:'v1', actionType:'set_valve_flow', params:{flowRate:'2.5'} });
     assert.strictEqual(net.components[1].flowRate, 2.5);
     assert.strictEqual(net.components[1].isOpen, true);
+    assert.ok(approxEqual(net.components[1].opening, 0.5));
   });
 
   test('applyAttack dosing clamps pH to [0,14]', () => {
