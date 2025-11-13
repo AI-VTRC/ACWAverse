@@ -10,10 +10,10 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "rootDir": "src",
-    "outDir": "src/dist",
+    "outDir": "docs/dist",
     "declaration": false,
     "sourceMap": true
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["src/dist"]
+  "exclude": ["docs/dist"]
 }

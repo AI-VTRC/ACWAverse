@@ -43,13 +43,11 @@ jobs:
       - name: Copy files to deployment directory
         run: |
           mkdir -p deploy
-
-          cp -r src/* deploy/
-
-          if [ -d "src/dist" ]; then
-            mkdir -p deploy/dist
-            cp -r src/dist/* deploy/dist/ 2>/dev/null || true
+          if [ ! -d "docs" ]; then
+            echo "ERROR: docs/ directory not found"
+            exit 1
           fi
+          cp -r docs/* deploy/
 
           touch deploy/.nojekyll
 
