@@ -116,8 +116,8 @@ This repository is configured to automatically deploy to GitHub Pages. Follow th
 
 The repository includes a GitHub Actions workflow (`.github/workflows/deploy-pages.yml`) that:
 - Builds the TypeScript code
-- Copies all necessary files from `src/` to `docs/`
-- Deploys to GitHub Pages
+- Synchronizes the freshly built `src/` application into `docs/`
+- Deploys the generated `docs/` directory to GitHub Pages
 
 The workflow runs automatically on:
 - Every push to the `main` branch
@@ -128,7 +128,7 @@ The workflow runs automatically on:
 To test the deployment locally:
 
 ```bash
-# Build and prepare docs folder (for testing)
+# Build and synchronize the same files used by GitHub Pages
 npm run deploy:local
 
 # Then serve from docs
@@ -156,7 +156,7 @@ ACWAverse/
 │   ├── main.tex          # LaTeX source
 │   ├── main.pdf          # Compiled paper
 │   └── images/           # Paper figures
-├── docs/                  # Generated files for GitHub Pages (auto-created)
+├── docs/                  # Generated GitHub Pages application
 ├── .github/workflows/     # GitHub Actions workflows
 └── package.json          # Node.js dependencies and scripts
 ```

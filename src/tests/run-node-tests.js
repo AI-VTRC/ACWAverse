@@ -37,7 +37,7 @@ async function main() {
   test('partial valve opening reduces passive flow', () => {
     const baseNetwork = (opening) => ({
       components: [
-        { id:'t1', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:4, waterLevel:2, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5 },
+        { id:'t1', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:2 * Math.PI, waterLevel:2, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5 },
         { id:'v', type:'valve', opening, isOpen: opening > 0 },
         { id:'t2', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:0, waterLevel:0, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5 }
       ],
@@ -46,10 +46,10 @@ async function main() {
         { from:'v', to:'t2' }
       ]
     });
-    const full = E.run(baseNetwork(1), [], [], [], 0, 20, 1);
-    const half = E.run(baseNetwork(0.5), [], [], [], 0, 20, 1);
-    const fullTransfer = full.results[0]['t2_waterAmount'];
-    const halfTransfer = half.results[0]['t2_waterAmount'];
+    const full = E.run(baseNetwork(1), [], [], [], 1, 20, 1);
+    const half = E.run(baseNetwork(0.5), [], [], [], 1, 20, 1);
+    const fullTransfer = full.results[1]['t2_waterAmount'];
+    const halfTransfer = half.results[1]['t2_waterAmount'];
     assert.ok(halfTransfer > 0);
     assert.ok(halfTransfer < fullTransfer);
   });
@@ -72,6 +72,7 @@ async function main() {
     // Test new set_valve_flow action
     E.applyTimedControl(net, { componentId:'v1', actionType:'set_valve_flow', params:{flowRate:'2.5'} });
     assert.strictEqual(net.components[1].flowRate, 2.5);
+    assert.strictEqual(net.components[1].flowSetpoint, 2.5);
     assert.strictEqual(net.components[1].isOpen, true);
     assert.ok(approxEqual(net.components[1].opening, 0.5));
   });
@@ -116,20 +117,20 @@ async function main() {
   test('gravity flow follows Hazen-Williams head-loss relationship', () => {
     const network = {
       components: [
-        { id:'t1', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:4, waterLevel:2, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5 },
+        { id:'t1', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:2 * Math.PI, waterLevel:2, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5 },
         { id:'j', type:'junction' },
         { id:'t2', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:0, waterLevel:0, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5 }
       ],
       pipes: [
-        { id:'p', from:'t1', to:'j', hw:{ K:4.0, n:1.852 } },
-        { id:'p2', from:'j', to:'t2' }
+        { id:'p', from:'t1', to:'j', hw:{ K:2.0, n:1.852 } },
+        { id:'p2', from:'j', to:'t2', hw:{ K:2.0, n:1.852 } }
       ]
     };
-    const out = E.run(network, [], [], [], 0, 20, 1);
+    const out = E.run(network, [], [], [], 1, 20, 1);
     const expectedFlow = hazenFlow(2, 4.0, 1.852);
-    const t1 = out.results[0]['t1_waterAmount'];
-    const t2 = out.results[0]['t2_waterAmount'];
-    assert.ok(Math.abs(t1 - (4 - expectedFlow)) < 5e-6);
+    const t1 = out.results[1]['t1_waterAmount'];
+    const t2 = out.results[1]['t2_waterAmount'];
+    assert.ok(Math.abs(t1 - ((2 * Math.PI) - expectedFlow)) < 5e-6);
     assert.ok(Math.abs(t2 - expectedFlow) < 5e-6);
   });
 
@@ -188,9 +189,9 @@ async function main() {
         {id:'d', from:'p', to:'tB', hw:{K:1.5, n:1.852}}
       ]
     };
-    const expectedFlow = solvePumpFlow(network.components[1], network.pipes[0], network.pipes[1], 1, 0.2);
+    const expectedFlow = solvePumpFlow(network.components[1], network.pipes[0], network.pipes[1], 2 / Math.PI, 1 / Math.PI);
     const controlActions = [ {time:0, componentId:'p', actionType:'set_pump_power', params:{power:'100'}} ];
-    const out = E.run(network, controlActions, [], [], 0, 20, 1);
+    const out = E.run(network, controlActions, [], [], 1, 20, 1);
     const afterA = out.simNetwork.components.find(c=>c.id==='tA');
     const delivered = 2 - afterA.waterAmount;
     assert.ok(Math.abs(delivered - expectedFlow) < 1e-3);
@@ -215,10 +216,223 @@ async function main() {
       ]
     };
     const controls = [ { time:0, componentId:'p', actionType:'set_pump_power', params:{ power:'100' } } ];
-    const out = E.run(network, controls, [], [], 0, 20, 1);
-    const first = out.results[0];
+    const out = E.run(network, controls, [], [], 1, 20, 1);
+    const first = out.results[1];
     assert.ok(first['t_waterAmount'] > 0);
     assert.ok(first['t_temperature'] > 15); // mixed with source temperature
+  });
+
+  test('linear source-to-tank-to-sink system drains after outlet pump starts', () => {
+    const network = {
+      components: [
+        { id:'src', type:'source', head:0, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5 },
+        { id:'pIn', type:'pump', maxFlowRate:0.5, power:0 },
+        { id:'vIn', type:'valve', isOpen:true, flowRate:0 },
+        { id:'tank', type:'tank', shape:'rectangular', width:2, height:2, maxLevel:10, waterAmount:0, waterLevel:0, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5 },
+        { id:'pOut', type:'pump', maxFlowRate:0.5, power:0 },
+        { id:'vOut', type:'valve', isOpen:true, flowRate:0 },
+        { id:'sink', type:'sink', head:0 }
+      ],
+      pipes: [
+        { from:'src', to:'pIn' },
+        { from:'pIn', to:'vIn' },
+        { from:'vIn', to:'tank' },
+        { from:'tank', to:'pOut' },
+        { from:'pOut', to:'vOut' },
+        { from:'vOut', to:'sink' }
+      ]
+    };
+    const controls = [
+      { time:2, componentId:'pIn', actionType:'set_pump_power', params:{power:'100'} },
+      { time:100, componentId:'pOut', actionType:'set_pump_power', params:{power:'100'} },
+      { time:110, componentId:'pIn', actionType:'set_pump_power', params:{power:'0'} }
+    ];
+    const out = E.run(network, controls, [], [], 150, 20, 1);
+    assert.ok(out.results[100]['tank_waterLevel'] > out.results[2]['tank_waterLevel']);
+    assert.ok(out.results[150]['tank_waterLevel'] < out.results[110]['tank_waterLevel']);
+  });
+
+  test('series pipes are solved as one hydraulic path', () => {
+    const tank = { id:'tank', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:0, waterLevel:0, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5 };
+    const source = { id:'src', type:'source', head:10, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5 };
+    const series = {
+      components: [source, {id:'v', type:'valve', isOpen:true}, tank],
+      pipes: [
+        {from:'src', to:'v', hw:{K:10, n:1}},
+        {from:'v', to:'tank', hw:{K:10, n:1}}
+      ]
+    };
+    const direct = {
+      components: [source, tank],
+      pipes: [{from:'src', to:'tank', hw:{K:20, n:1}}]
+    };
+    const seriesOut = E.run(series, [], [], [], 1, 20, 1);
+    const directOut = E.run(direct, [], [], [], 1, 20, 1);
+    const seriesDelivered = seriesOut.results[1]['tank_waterAmount'];
+    const directDelivered = directOut.results[1]['tank_waterAmount'];
+    assert.ok(approxEqual(seriesDelivered, 0.5, 1e-8));
+    assert.ok(approxEqual(seriesDelivered, directDelivered, 1e-8));
+  });
+
+  test('pump flow reaches every downstream branch', () => {
+    const network = {
+      components: [
+        {id:'src', type:'source', head:0, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5},
+        {id:'pump', type:'pump', maxFlowRate:1, power:0, headGain:10},
+        {id:'junction', type:'junction'},
+        {id:'left', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:0, waterLevel:0, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5},
+        {id:'right', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:0, waterLevel:0, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5}
+      ],
+      pipes: [
+        {from:'src', to:'pump', hw:{K:0.1, n:1}},
+        {from:'pump', to:'junction', hw:{K:0.1, n:1}},
+        {from:'junction', to:'left', hw:{K:0.1, n:1}},
+        {from:'junction', to:'right', hw:{K:0.1, n:1}}
+      ]
+    };
+    const controls = [{time:0, componentId:'pump', actionType:'set_pump_power', params:{power:'100'}}];
+    const out = E.run(network, controls, [], [], 1, 20, 1);
+    assert.ok(out.results[1]['left_waterAmount'] > 0);
+    assert.ok(out.results[1]['right_waterAmount'] > 0);
+  });
+
+  test('hydraulic solution mixes chemistry exactly once per interval', () => {
+    const area = Math.PI;
+    const network = {
+      components: [
+        {id:'sourceTank', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:2 * area, waterLevel:0, temperature:20, ph:10, o2:8, bodn:2, nitrate:1, co2:5},
+        {id:'destTank', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:area, waterLevel:0, temperature:20, ph:4, o2:8, bodn:2, nitrate:1, co2:5}
+      ],
+      pipes: [{from:'sourceTank', to:'destTank', hw:{K:100, n:1}}]
+    };
+    const out = E.run(network, [], [], [], 1, 20, 1);
+    const delivered = 0.01;
+    const expectedPh = ((4 * area) + (10 * delivered)) / (area + delivered);
+    const dest = out.simNetwork.components.find(comp => comp.id === 'destTank');
+    assert.ok(approxEqual(dest.ph, expectedPh, 1e-9));
+  });
+
+  test('set_valve_flow imposes a hydraulic flow setpoint', () => {
+    const build = (flowRate) => ({
+      components: [
+        {id:'src', type:'source', head:0, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5},
+        {id:'pump', type:'pump', maxFlowRate:1, power:0, headGain:100},
+        {id:'valve', type:'valve', isOpen:true},
+        {id:'tank', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:0, waterLevel:0, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5}
+      ],
+      pipes: [
+        {from:'src', to:'pump', hw:{K:0.01, n:1}},
+        {from:'pump', to:'valve', hw:{K:0.01, n:1}},
+        {from:'valve', to:'tank', hw:{K:0.01, n:1}}
+      ],
+      controls: [
+        {time:0, componentId:'pump', actionType:'set_pump_power', params:{power:'100'}},
+        {time:0, componentId:'valve', actionType:'set_valve_flow', params:{flowRate:String(flowRate)}}
+      ]
+    });
+    const low = build(0.1);
+    const high = build(0.8);
+    const lowOut = E.run(low, low.controls, [], [], 1, 20, 1);
+    const highOut = E.run(high, high.controls, [], [], 1, 20, 1);
+    assert.ok(approxEqual(lowOut.results[1]['tank_waterAmount'], 0.1, 1e-8));
+    assert.ok(highOut.results[1]['tank_waterAmount'] > lowOut.results[1]['tank_waterAmount'] * 5);
+  });
+
+  test('a valve flow setpoint is shared across downstream branches', () => {
+    const network = {
+      components: [
+        {id:'src', type:'source', head:0, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5},
+        {id:'pump', type:'pump', maxFlowRate:1, power:0, headGain:100},
+        {id:'valve', type:'valve', isOpen:true, maxFlowRate:1},
+        {id:'junction', type:'junction'},
+        {id:'left', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:0, waterLevel:0, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5},
+        {id:'right', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:0, waterLevel:0, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5}
+      ],
+      pipes: [
+        {from:'src', to:'pump', hw:{K:0.01, n:1}},
+        {from:'pump', to:'valve', hw:{K:0.01, n:1}},
+        {from:'valve', to:'junction', hw:{K:0.01, n:1}},
+        {from:'junction', to:'left', hw:{K:0.01, n:1}},
+        {from:'junction', to:'right', hw:{K:0.01, n:1}}
+      ]
+    };
+    const controls = [
+      {time:0, componentId:'pump', actionType:'set_pump_power', params:{power:'100'}},
+      {time:0, componentId:'valve', actionType:'set_valve_flow', params:{flowRate:'0.2'}}
+    ];
+    const out = E.run(network, controls, [], [], 1, 20, 1);
+    const delivered = out.results[1]['left_waterAmount'] + out.results[1]['right_waterAmount'];
+    assert.ok(approxEqual(delivered, 0.2, 1e-8));
+    assert.ok(out.results[1]['left_waterAmount'] > 0);
+    assert.ok(out.results[1]['right_waterAmount'] > 0);
+  });
+
+  test('fractional and off-grid scheduled actions execute exactly once', () => {
+    const network = { components:[{id:'pump', type:'pump', maxFlowRate:1, power:0}], pipes:[] };
+    const fractional = E.run(
+      network,
+      [{time:0.3, componentId:'pump', actionType:'set_pump_power', params:{power:'100'}}],
+      [],
+      [],
+      0.5,
+      20,
+      0.1
+    );
+    assert.strictEqual(fractional.simNetwork.components[0].power, 100);
+    assert.ok(fractional.results.some(row => approxEqual(row.time, 0.3)));
+
+    const offGrid = E.run(
+      network,
+      [{time:1, componentId:'pump', actionType:'set_pump_power', params:{power:'75'}}],
+      [],
+      [],
+      2,
+      20,
+      2
+    );
+    assert.strictEqual(offGrid.simNetwork.components[0].power, 75);
+    assert.ok(offGrid.results.some(row => row.time === 1));
+  });
+
+  test('zero-duration simulations record state without advancing it', () => {
+    const network = {
+      components: [{id:'tank', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:1, waterLevel:0, temperature:10, ph:7, o2:8, bodn:2, nitrate:1, co2:5}],
+      pipes: []
+    };
+    const out = E.run(network, [], [], [], 0, 20, 1);
+    assert.strictEqual(out.results.length, 1);
+    assert.strictEqual(out.results[0].time, 0);
+    assert.ok(approxEqual(out.results[0]['tank_temperature'], 10));
+  });
+
+  test('default pipe resistance uses matching flow and head-loss equations', () => {
+    const network = {
+      components: [
+        {id:'src', type:'source', head:1, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5},
+        {id:'tank', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:0, waterLevel:0, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5}
+      ],
+      pipes: [{from:'src', to:'tank'}]
+    };
+    const out = E.run(network, [], [], [], 1, 20, 1);
+    assert.ok(approxEqual(out.results[1]['tank_waterAmount'], Math.sqrt(1 / 1e6), 1e-10));
+  });
+
+  test('UI accepts time-zero attacks and escapes imported values before table rendering', () => {
+    const uiSource = fs.readFileSync(path.resolve(__dirname, '../acwa.js'), 'utf8');
+    assert.ok(uiSource.includes('function escapeHtml(value)'));
+    assert.ok(uiSource.includes('attack.time ?? attack.startTime'));
+    assert.ok(uiSource.includes('Number.isFinite(attack.time)'));
+    assert.ok(uiSource.includes('escapeHtml(action.componentId)'));
+    assert.ok(uiSource.includes('escapeHtml(attack.componentId)'));
+  });
+
+  test('build synchronizes fresh source before the GitHub Pages workflow deploys docs', () => {
+    const workflow = fs.readFileSync(path.resolve(__dirname, '../../.github/workflows/deploy-pages.yml'), 'utf8');
+    const packageJson = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../package.json'), 'utf8'));
+    const syncScript = fs.readFileSync(path.resolve(__dirname, '../../scripts/sync-docs.js'), 'utf8');
+    assert.ok(packageJson.scripts.build.includes('node scripts/sync-docs.js'));
+    assert.ok(syncScript.includes('fs.cpSync(sourceDir, docsDir'));
+    assert.ok(workflow.includes('cp -r docs/* deploy/'));
   });
 
   test('higher Hazen resistance reduces gravity flow', () => {
@@ -230,14 +444,14 @@ async function main() {
       ],
       pipes: [
         { id:'p1', from:'t1', to:'mid', hw:{K, n:1.852} },
-        { id:'p2', from:'mid', to:'t2' }
+        { id:'p2', from:'mid', to:'t2', hw:{K, n:1.852} }
       ]
     });
     const lowLoss = baseNetwork(0.5);
     const highLoss = baseNetwork(3.0);
-    const outLow = E.run(lowLoss, [], [], [], 0, 20, 1);
-    const outHigh = E.run(highLoss, [], [], [], 0, 20, 1);
-    assert.ok(outLow.results[0]['t2_waterAmount'] > outHigh.results[0]['t2_waterAmount']);
+    const outLow = E.run(lowLoss, [], [], [], 1, 20, 1);
+    const outHigh = E.run(highLoss, [], [], [], 1, 20, 1);
+    assert.ok(outLow.results[1]['t2_waterAmount'] > outHigh.results[1]['t2_waterAmount']);
   });
 
   test('increased pipe resistance lowers pump transfer rate', () => {
@@ -255,8 +469,8 @@ async function main() {
     const low = build(0.4);
     const high = build(2.5);
     const ctrl = [ { time:0, componentId:'p', actionType:'set_pump_power', params:{ power:'100' } } ];
-    const lowResult = E.run(low, ctrl, [], [], 0, 20, 1);
-    const highResult = E.run(high, ctrl, [], [], 0, 20, 1);
+    const lowResult = E.run(low, ctrl, [], [], 1, 20, 1);
+    const highResult = E.run(high, ctrl, [], [], 1, 20, 1);
     const flowLow = 2 - lowResult.simNetwork.components.find(c=>c.id==='tA').waterAmount;
     const flowHigh = 2 - highResult.simNetwork.components.find(c=>c.id==='tA').waterAmount;
     assert.ok(flowLow > flowHigh);
@@ -393,13 +607,13 @@ async function main() {
       pipes: [ {from:'t1', to:'v'}, {from:'v', to:'t2'} ]
     };
     // Without attack, Hazen flow should drain some volume
-    let out = E.run(network, [], [], [], 0, 20, 1);
-    const first = out.results[0];
+    let out = E.run(network, [], [], [], 1, 20, 1);
+    const first = out.results[1];
     assert.ok(first['t1_waterAmount'] < Math.PI);
     // With attack at t=0, no gravity depletion at t=0
     const network2 = JSON.parse(JSON.stringify(network));
-    out = E.run(network2, [], [], [ {time:0, type:'physical_damage', componentId:'v', damageType:'valve_stuck'} ], 0, 20, 1);
-    const first2 = out.results[0];
+    out = E.run(network2, [], [], [ {time:0, type:'physical_damage', componentId:'v', damageType:'valve_stuck'} ], 1, 20, 1);
+    const first2 = out.results[1];
     assert.ok(Math.abs(first2['t1_waterAmount'] - Math.PI) < 1e-9);
   });
 
@@ -437,8 +651,8 @@ async function main() {
     };
     const rules = [ { source:{ componentId:'tA', value:'waterLevel' }, condition:{ operator:'>', threshold: 8 }, target:{ componentId:'p', actionType:'set_pump_power', params:{ power:'100' } } } ];
     const attacks = [ { time:0, type:'data_poisoning', componentId:'tA', poisonType:'waterLevel', value: 9, duration: 1 } ];
-    const out = E.run(network, [], rules, attacks, 0, 20, 1);
-    const first = out.results[0];
+    const out = E.run(network, [], rules, attacks, 1, 20, 1);
+    const first = out.results[1];
     assert.ok(first['tB_waterAmount'] > 1);
     const pump = out.simNetwork.components.find(c=>c.id==='p');
     assert.ok(pump.power > 0);
@@ -455,7 +669,7 @@ async function main() {
     const first = out.results[0];
     assert.ok(approxEqual(first['t_waterLevel'], 1));
     assert.strictEqual(first['t_waterLevel_reported'], 7);
-    assert.ok(approxEqual(first['t_temperature'], 10.01));
+    assert.ok(approxEqual(first['t_temperature'], 10));
     assert.strictEqual(first['t_temperature_reported'], 50);
   });
 
@@ -503,7 +717,7 @@ async function main() {
     ];
     const out = E.run(net, [], rules, [], 1, 20, 1);
     const rows = out.results;
-    assert.ok(rows[0]['t2_waterAmount'] > 0);
+    assert.ok(rows[1]['t2_waterAmount'] > 0);
     const pump1 = out.simNetwork.components.find(c=>c.id==='p1');
     const pump2 = out.simNetwork.components.find(c=>c.id==='p2');
     assert.ok(pump1.power > 0);
@@ -543,10 +757,10 @@ async function main() {
     const baseTank = { id:'t', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:1, waterLevel:0, temperature:10, ph:7, o2:8, bodn:2, nitrate:1, co2:5 };
     const net1 = { components:[ JSON.parse(JSON.stringify(baseTank)) ], pipes:[] };
     const net10 = { components:[ JSON.parse(JSON.stringify(baseTank)) ], pipes:[] };
-    const out1 = E.run(net1, [], [], [], 0, 20, 1); // Δt=1
-    const out10 = E.run(net10, [], [], [], 0, 20, 10); // Δt=10
-    const t1 = out1.results[0]['t_temperature']; // 10 + (20-10)*0.001*1 = 10.01
-    const t10 = out10.results[0]['t_temperature']; // 10 + (20-10)*0.001*10 = 10.1
+    const out1 = E.run(net1, [], [], [], 1, 20, 1); // Δt=1
+    const out10 = E.run(net10, [], [], [], 10, 20, 10); // Δt=10
+    const t1 = out1.results[1]['t_temperature']; // 10 + (20-10)*0.001*1 = 10.01
+    const t10 = out10.results[1]['t_temperature']; // 10 + (20-10)*0.001*10 = 10.1
     assert.ok(approxEqual(t1, 10.01));
     assert.ok(approxEqual(t10, 10.1));
   });
@@ -565,8 +779,8 @@ async function main() {
     const halfPower = JSON.parse(JSON.stringify(netBase));
     const ctrlFull = [ {time:0, componentId:'p', actionType:'set_pump_power', params:{power:'100'}} ];
     const ctrlHalf = [ {time:0, componentId:'p', actionType:'set_pump_power', params:{power:'50'}} ];
-    const outFull = E.run(fullPower, ctrlFull, [], [], 0, 20, 1);
-    const outHalf = E.run(halfPower, ctrlHalf, [], [], 0, 20, 1);
+    const outFull = E.run(fullPower, ctrlFull, [], [], 1, 20, 1);
+    const outHalf = E.run(halfPower, ctrlHalf, [], [], 1, 20, 1);
     const flowFull = 2 - outFull.simNetwork.components.find(c=>c.id==='tA').waterAmount;
     const flowHalf = 2 - outHalf.simNetwork.components.find(c=>c.id==='tA').waterAmount;
     assert.ok(flowFull > flowHalf);
@@ -579,7 +793,7 @@ async function main() {
       ],
       pipes: []
     };
-    const out = E.run(net, [], [], [], 0, 20, 1);
+    const out = E.run(net, [], [], [], 1, 20, 1);
     const result = out.simNetwork.components.find(c=>c.id==='t');
     assert.ok(result.bodn < 6);
     assert.ok(result.o2 < 9);
@@ -594,7 +808,7 @@ async function main() {
       ],
       pipes: []
     };
-    const out = E.run(net, [], [], [], 0, 20, 1);
+    const out = E.run(net, [], [], [], 1, 20, 1);
     const result = out.simNetwork.components.find(c=>c.id==='t');
     assert.ok(result.o2 > 2);
   });
@@ -621,8 +835,8 @@ async function main() {
     const ctrl = [ {time:0, componentId:'p', actionType:'set_pump_power', params:{power:'100'}} ];
     const fullEff = JSON.parse(JSON.stringify(network));
     fullEff.components[1].efficiency = 1;
-    const resultHalf = E.run(network, ctrl, [], [], 0, 20, 1);
-    const resultFull = E.run(fullEff, ctrl, [], [], 0, 20, 1);
+    const resultHalf = E.run(network, ctrl, [], [], 1, 20, 1);
+    const resultFull = E.run(fullEff, ctrl, [], [], 1, 20, 1);
     const flowHalf = 2 - resultHalf.simNetwork.components.find(c=>c.id==='tA').waterAmount;
     const flowFull = 2 - resultFull.simNetwork.components.find(c=>c.id==='tA').waterAmount;
     assert.ok(flowFull > flowHalf);
@@ -639,7 +853,7 @@ async function main() {
       pipes: [ {from:'tA', to:'p', hw:{K:1, n:1.852}}, {from:'p', to:'tB', hw:{K:1, n:1.852}} ]
     };
     const controls = [ {time:0, componentId:'p', actionType:'set_pump_power', params:{power:'100'}} ];
-    const out = E.run(net, controls, [], [], 0, 20, 1);
+    const out = E.run(net, controls, [], [], 1, 20, 1);
     const flow = 2 - out.simNetwork.components.find(c=>c.id==='tA').waterAmount;
     const total = 1 + flow;
     const expected = ((4 * 1) + (10 * flow)) / total;
@@ -663,8 +877,8 @@ async function main() {
       ],
       pipes: [ {from:'src', to:'j', hw:{K:1.2, n:1.852}}, {from:'j', to:'t'} ]
     };
-    const out = E.run(network, [], [], [], 0, 20, 1);
-    assert.ok(out.results[0]['t_waterAmount'] > 0);
+    const out = E.run(network, [], [], [], 1, 20, 1);
+    assert.ok(out.results[1]['t_waterAmount'] > 0);
   });
 
   // --- Advanced hydraulics: Hazen–Williams style optional flows ---
@@ -705,8 +919,8 @@ async function main() {
   test('first-order decay in tanks reduces species per exp(-k dt)', () => {
     const t = { id:'t', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:1, waterLevel:0, temperature:20, ph:7, o2:10, bodn:5, nitrate:2, co2:8, decayRates:{ o2: 0.1, bodn: 0.2 } };
     const net = { components:[ t ], pipes:[] };
-    const out = E.run(net, [], [], [], 0, 20, 10); // dt=10
-    const first = out.results[0];
+    const out = E.run(net, [], [], [], 10, 20, 10); // dt=10
+    const first = out.results[1];
     assert.ok(approxEqual(first['t_o2'], 10 * Math.exp(-0.1*10)));
     assert.ok(approxEqual(first['t_bodn'], 5 * Math.exp(-0.2*10)));
   });
@@ -793,9 +1007,9 @@ async function main() {
     const net = { components: comps, pipes };
     const controls = [ {time:0, componentId:'p', actionType:'set_pump_power', params:{power:'100'}} ];
     const out = E.run(net, controls, [], [], 1, 20, 1);
-    const delivered = out.results[0]['tB_waterAmount'];
+    const delivered = out.results[1]['tB_waterAmount'];
     assert.ok(delivered > 0);
-    assert.ok(out.results[0]['tA_waterAmount'] < 2);
+    assert.ok(out.results[1]['tA_waterAmount'] < 2);
   });
 
   // Poisoning overlap precedence at the same tick uses last applied

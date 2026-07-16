@@ -186,7 +186,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                             <div>
                                 <label for="controlTime" class="block text-sm font-medium text-gray-700">Time (s)</label>
-                                <input type="number" id="controlTime" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                                <input type="number" id="controlTime" min="0" step="any" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
                             </div>
                             <div>
                                 <label for="controlComponent" class="block text-sm font-medium text-gray-700">Component</label>
@@ -296,7 +296,7 @@
                         <div class="p-4 border rounded-lg">
                             <h3 class="font-semibold mb-2">Chemical Dosing (pH Attack)</h3>
                              <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-                                <input type="number" id="cdTime" placeholder="Time (s)" class="rounded-md p-2">
+                                <input type="number" id="cdTime" min="0" step="any" placeholder="Time (s)" class="rounded-md p-2">
                                 <select id="cdComponent" class="rounded-md p-2"></select>
                                 <select id="cdChemicalType" class="rounded-md p-2">
                                     <option value="acid">Acid (e.g., H₂SO₄)</option>
@@ -310,7 +310,7 @@
                         <div class="p-4 border rounded-lg">
                             <h3 class="font-semibold mb-2">Chemical Interference</h3>
                              <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-                                <input type="number" id="ciTime" placeholder="Time (s)" class="rounded-md p-2">
+                                <input type="number" id="ciTime" min="0" step="any" placeholder="Time (s)" class="rounded-md p-2">
                                 <select id="ciComponent" class="rounded-md p-2"></select>
                                 <select id="ciChemical" class="rounded-md p-2">
                                     <option value="BODn">BODn</option>
@@ -326,7 +326,7 @@
                         <div class="p-4 border rounded-lg">
                             <h3 class="font-semibold mb-2">Physical Damage</h3>
                              <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                                <input type="number" id="pdTime" placeholder="Time (s)" class="rounded-md p-2">
+                                <input type="number" id="pdTime" min="0" step="any" placeholder="Time (s)" class="rounded-md p-2">
                                 <select id="pdComponent" class="rounded-md p-2"></select>
                                 <select id="pdType" class="rounded-md p-2">
                                     <option value="leak">Tank Leak</option>
@@ -340,7 +340,7 @@
                         <div class="p-4 border rounded-lg">
                             <h3 class="font-semibold mb-2">Data Poisoning</h3>
                             <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
-                                <input type="number" id="dpTime" placeholder="Start Time (s)" class="rounded-md p-2">
+                                <input type="number" id="dpTime" min="0" step="any" placeholder="Start Time (s)" class="rounded-md p-2">
                                 <input type="number" id="dpDuration" placeholder="Duration (s)" class="rounded-md p-2">
                                 <select id="dpComponent" class="rounded-md p-2"></select>
                                 <select id="dpSensor" class="rounded-md p-2">
@@ -443,7 +443,7 @@
             <div class="space-y-4">
                 <div>
                     <label for="editControlTime" class="block text-sm font-medium text-gray-700">Time (s)</label>
-                    <input type="number" id="editControlTime" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                    <input type="number" id="editControlTime" min="0" step="any" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
                 </div>
                 <div>
                     <label for="editControlComponent" class="block text-sm font-medium text-gray-700">Component</label>
