@@ -21,6 +21,20 @@ function attackStartTime(attack) {
     return attack.time ?? attack.startTime;
 }
 
+const POISONABLE_SENSOR_FIELDS = {
+    tank: ['waterLevel', 'waterAmount', 'temperature', 'ph', 'o2', 'bodn', 'nitrate', 'co2'],
+    source: ['waterLevel', 'temperature', 'ph', 'o2', 'bodn', 'nitrate', 'co2', 'head'],
+    pump: ['power', 'flowRate', 'efficiency', 'headGain', 'head'],
+    valve: ['flowRate', 'opening'],
+    sink: ['head'],
+    junction: ['head']
+};
+
+function validateAttackList(targetNetwork, attacks, duration) {
+    if (!window.ACWAEngine || typeof ACWAEngine.validateAttackScenarios !== 'function') return [];
+    return ACWAEngine.validateAttackScenarios(targetNetwork, attacks, duration);
+}
+
 //don't test this
 function initVisualization() {
     const container = document.getElementById('network-visualizer-container');
@@ -596,6 +610,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (pdComponentSelect) {
         pdComponentSelect.addEventListener('change', updatePhysicalDamageOptions);
     }
+    const pdTypeSelect = document.getElementById('pdType');
+    if (pdTypeSelect) {
+        pdTypeSelect.addEventListener('change', updatePhysicalDamageFields);
+    }
+    const dpComponentSelect = document.getElementById('dpComponent');
+    if (dpComponentSelect) {
+        dpComponentSelect.addEventListener('change', updateDataPoisoningOptions);
+    }
 });
 
 function populateSampleSystemsList() {
@@ -629,13 +651,21 @@ function createNewSystem() {
 }
 
 function loadSystem(systemData) {
+    const nextNetwork = systemData.network || { components: [], pipes: [] };
+    const nextAttacks = systemData.attackScenarios || [];
+    const nextSettings = systemData.simulationSettings || { duration: 600, ambientTemp: 20 };
+    const attackErrors = validateAttackList(nextNetwork, nextAttacks, Number(nextSettings.duration));
+    if (attackErrors.length) {
+        throw new Error(`Invalid attack scenarios:\n${attackErrors.join('\n')}`);
+    }
+
     systemName = systemData.name || "Untitled System";
-    network = systemData.network || { components: [], pipes: [] };
+    network = nextNetwork;
     controlActions = systemData.controlActions || [];
     conditionalActions = systemData.conditionalActions || [];
-    attackScenarios = systemData.attackScenarios || [];
+    attackScenarios = nextAttacks;
     
-    const simSettings = systemData.simulationSettings || { duration: 600, ambientTemp: 20 };
+    const simSettings = nextSettings;
     document.getElementById('simDuration').value = simSettings.duration;
     document.getElementById('ambientTemp').value = simSettings.ambientTemp;
     
@@ -947,6 +977,7 @@ function updateAllDropdowns() {
     handleEditControlComponentChange();
     handleConditionalTargetChange();
     updatePhysicalDamageOptions();
+    updateDataPoisoningOptions();
     
     valueSelects.forEach(select => {
         if(select) {
@@ -1002,6 +1033,45 @@ function updatePhysicalDamageOptions() {
         const firstVisible = Array.from(pdType.options).find(o => !o.hidden && o.value);
         if (firstVisible) pdType.value = firstVisible.value;
     }
+    updatePhysicalDamageFields();
+}
+
+function updatePhysicalDamageFields() {
+    const pdType = document.getElementById('pdType');
+    const leakFields = document.getElementById('pdLeakFields');
+    if (!pdType || !leakFields) return;
+    leakFields.style.display = pdType.value === 'leak' ? 'contents' : 'none';
+}
+
+function updateDataPoisoningOptions() {
+    const componentSelect = document.getElementById('dpComponent');
+    const sensorSelect = document.getElementById('dpSensor');
+    if (!componentSelect || !sensorSelect || !network || !Array.isArray(network.components)) return;
+
+    const previous = sensorSelect.value;
+    const component = network.components.find(comp => comp.id === componentSelect.value);
+    const fields = component
+        ? (POISONABLE_SENSOR_FIELDS[component.type] || []).filter(field => typeof component[field] === 'number')
+        : [];
+
+    sensorSelect.innerHTML = '';
+    if (fields.length === 0) {
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = component ? 'No numeric sensors available' : 'Select component first';
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        sensorSelect.appendChild(placeholder);
+        return;
+    }
+
+    fields.forEach(field => {
+        const option = document.createElement('option');
+        option.value = field;
+        option.textContent = field;
+        sensorSelect.appendChild(option);
+    });
+    sensorSelect.value = fields.includes(previous) ? previous : fields[0];
 }
 
 function updateInitialConditions() {
@@ -1413,10 +1483,17 @@ function addAttack(type) {
         attack.time = parseFloat(document.getElementById('pdTime').value);
         attack.componentId = document.getElementById('pdComponent').value;
         attack.damageType = document.getElementById('pdType').value;
+        if (attack.damageType === 'leak') {
+            attack.leakRate = parseFloat(document.getElementById('pdLeakRate').value);
+            const durationRaw = document.getElementById('pdDuration').value.trim();
+            if (durationRaw !== '') attack.duration = parseFloat(durationRaw);
+        }
         
         // Validate physical damage attack
-        if (!Number.isFinite(attack.time) || attack.time < 0 || !attack.componentId || !attack.damageType) {
-            alert('Please fill in all fields for the physical damage attack: Time, Component, and Damage Type.');
+        if (!Number.isFinite(attack.time) || attack.time < 0 || !attack.componentId || !attack.damageType ||
+            (attack.damageType === 'leak' && (!Number.isFinite(attack.leakRate) || attack.leakRate <= 0 ||
+                (attack.duration !== undefined && (!Number.isFinite(attack.duration) || attack.duration <= 0))))) {
+            alert('Please provide a valid time, compatible component, damage type, and a leak rate > 0. Leak duration is optional but must be > 0 when provided.');
             return;
         }
     } else if (type === 'data_poisoning') {
@@ -1427,12 +1504,18 @@ function addAttack(type) {
         attack.value = parseFloat(document.getElementById('dpValue').value);
         
         // Validate data poisoning attack
-        if (!Number.isFinite(attack.time) || attack.time < 0 || !Number.isFinite(attack.duration) || attack.duration <= 0 || !attack.componentId || !attack.poisonType || isNaN(attack.value)) {
+        if (!Number.isFinite(attack.time) || attack.time < 0 || !Number.isFinite(attack.duration) || attack.duration <= 0 || !attack.componentId || !attack.poisonType || !Number.isFinite(attack.value)) {
             alert('Please fill in all fields for the data poisoning attack: Start Time, Duration, Component, Sensor Type, and Value.');
             return;
         }
     }
     if(attack.time !== undefined || attack.startTime !== undefined) {
+        const duration = Number(document.getElementById('simDuration').value);
+        const attackErrors = validateAttackList(network, [attack], duration);
+        if (attackErrors.length) {
+            alert(attackErrors.join('\n'));
+            return;
+        }
         attackScenarios.push(attack);
         attackScenarios.sort((a, b) => attackStartTime(a) - attackStartTime(b));
         updateAttacksTable();
@@ -1442,8 +1525,12 @@ function addAttack(type) {
             document.getElementById('dpTime').value = '';
             document.getElementById('dpDuration').value = '';
             document.getElementById('dpComponent').value = '';
-            document.getElementById('dpSensor').value = 'waterLevel';
             document.getElementById('dpValue').value = '';
+            updateDataPoisoningOptions();
+        }
+        if (type === 'physical_damage' && attack.damageType === 'leak') {
+            document.getElementById('pdLeakRate').value = '';
+            document.getElementById('pdDuration').value = '';
         }
     }
 }
@@ -1466,14 +1553,20 @@ function updateAttacksTable() {
                 timeDisplay = `${attackStartTime(attack)}`;
                 break;
             case 'physical_damage': 
-                details = `Damage: ${attack.damageType}`; 
-                timeDisplay = `${attackStartTime(attack)}`;
+                details = `Damage: ${attack.damageType}`;
+                if (attack.damageType === 'leak') {
+                    details += `, Rate: ${attack.leakRate} m³/s`;
+                    if (attack.duration !== undefined) details += `, Duration: ${attack.duration}s`;
+                }
+                timeDisplay = attack.damageType === 'leak' && attack.duration !== undefined
+                    ? `[${attackStartTime(attack)}, ${attackStartTime(attack) + attack.duration})`
+                    : `${attackStartTime(attack)}`;
                 break;
             case 'data_poisoning': 
                 details = `Poison: ${attack.poisonType}, Value: ${attack.value}, Duration: ${attack.duration}s`; 
                 const startTime = attackStartTime(attack);
                 const endTime = startTime + attack.duration;
-                timeDisplay = `[${startTime}, ${endTime}]`;
+                timeDisplay = `[${startTime}, ${endTime})`;
                 break;
         }
         row.innerHTML = `<td class="px-6 py-4">${escapeHtml(timeDisplay)}</td><td class="px-6 py-4">${escapeHtml(attack.type)}</td>
@@ -1520,7 +1613,10 @@ function loadSystemFromFile(event) {
             try {
                 const systemData = JSON.parse(e.target.result);
                 loadSystem(systemData);
-            } catch (error) { console.error("Error parsing system file:", error); alert('Error parsing system file.'); }
+            } catch (error) {
+                console.error("Error loading system file:", error);
+                alert(error instanceof Error ? error.message : 'Error loading system file.');
+            }
         };
         reader.readAsText(file);
     }
@@ -1542,13 +1638,22 @@ function importAttackScenarios(event) {
         reader.onload = (e) => {
             try {
                 const data = JSON.parse(e.target.result);
+                const nextAttacks = data.attackScenarios || [];
+                const duration = Number(document.getElementById('simDuration').value);
+                const attackErrors = validateAttackList(network, nextAttacks, duration);
+                if (attackErrors.length) {
+                    throw new Error(`Invalid attack scenarios:\n${attackErrors.join('\n')}`);
+                }
                 controlActions = data.controlActions || [];
                 conditionalActions = data.conditionalActions || [];
-                attackScenarios = data.attackScenarios || [];
+                attackScenarios = nextAttacks;
                 updateControlActionsTable();
                 updateConditionalActionsTable();
                 updateAttacksTable();
-            } catch (error) { console.error("Error parsing scenarios file:", error); alert('Error parsing scenarios file.'); }
+            } catch (error) {
+                console.error("Error loading scenarios file:", error);
+                alert(error instanceof Error ? error.message : 'Error loading scenarios file.');
+            }
         };
         reader.readAsText(file);
     }
@@ -1817,7 +1922,7 @@ function renderAnalysisCharts() {
     
     const annotations = {};
 
-    attackScenarios.forEach((attack, i) => {
+    attackScenarios.filter(attack => attack.componentId === componentId).forEach((attack, i) => {
         const attackTime = attack.time !== undefined ? attack.time : attack.startTime;
         const attackLabel = `${attack.type} on ${attack.componentId}`;
         
@@ -2017,6 +2122,12 @@ function startSimulation() {
             }
         }
     });
+
+    const attackErrors = validateAttackList(network, attackScenarios, duration);
+    if (attackErrors.length) {
+        alert(`Invalid attack scenarios:\n${attackErrors.join('\n')}`);
+        return;
+    }
 
     const progressBar = document.getElementById('progress-bar');
     const progressContainer = document.getElementById('simulation-progress');

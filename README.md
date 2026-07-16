@@ -26,6 +26,15 @@ ACWAverse addresses these critical challenges by providing a comprehensive simul
 - **Dataset Generation for ML**: Extensive capabilities for generating synthetic datasets for machine learning research in cyber-physical security
 - **Interactive Visualization**: Multiple layout algorithms (topological, balanced, compact) with real-time attack visualization
 
+### Attack Semantics
+
+- Data-poisoning and finite leak windows use half-open timing: an attack starting at `t` with duration `d` is active on `[t, t + d)`. Attack end times are simulation events, so conditional controls return to actual sensor values at the exact end time.
+- Overlapping poisoning attacks on the same sensor use the most recently started active value; an earlier attack resumes if the newer window ends first.
+- Pump failures and stuck valves persist for the remainder of the simulation. A stuck valve freezes at its current opening rather than being forced closed.
+- Tank leaks remove water continuously at the configured rate in m³/s. A duration may be supplied; without one, the leak persists.
+- Chemical dosing and chemical interference are bounded, abstract state perturbations (`ΔpH` and `Δmg/L`) applied to tanks. They are not mass-dose, buffering, or reaction-equilibrium models.
+- Imported attack scenarios are validated against target component types, available numeric sensors, simulation duration, and finite parameter values before execution.
+
 ---
 
 ## System Architecture
