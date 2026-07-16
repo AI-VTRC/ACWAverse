@@ -294,7 +294,7 @@
                     <div class="space-y-6">
                         <!-- Chemical Dosing Attack -->
                         <div class="p-4 border rounded-lg">
-                            <h3 class="font-semibold mb-2">Chemical Dosing (pH Attack)</h3>
+                            <h3 class="font-semibold mb-2">Chemical Dosing (Abstract ΔpH Perturbation)</h3>
                              <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                                 <input type="number" id="cdTime" min="0" step="any" placeholder="Time (s)" class="rounded-md p-2">
                                 <select id="cdComponent" class="rounded-md p-2"></select>
@@ -308,7 +308,7 @@
                         </div>
                         <!-- Chemical Interference -->
                         <div class="p-4 border rounded-lg">
-                            <h3 class="font-semibold mb-2">Chemical Interference</h3>
+                            <h3 class="font-semibold mb-2">Chemical Interference (Abstract Δmg/L Perturbation)</h3>
                              <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                                 <input type="number" id="ciTime" min="0" step="any" placeholder="Time (s)" class="rounded-md p-2">
                                 <select id="ciComponent" class="rounded-md p-2"></select>
@@ -325,14 +325,18 @@
                         <!-- Physical Damage -->
                         <div class="p-4 border rounded-lg">
                             <h3 class="font-semibold mb-2">Physical Damage</h3>
-                             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                             <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
                                 <input type="number" id="pdTime" min="0" step="any" placeholder="Time (s)" class="rounded-md p-2">
                                 <select id="pdComponent" class="rounded-md p-2"></select>
                                 <select id="pdType" class="rounded-md p-2">
                                     <option value="leak">Tank Leak</option>
                                     <option value="pump_failure">Pump Failure</option>
-                                    <option value="valve_stuck">Valve Stuck</option>
+                                    <option value="valve_stuck">Valve Stuck at Current Position</option>
                                 </select>
+                                <span id="pdLeakFields" style="display: contents;">
+                                    <input type="number" id="pdLeakRate" min="0" step="any" placeholder="Leak Rate (m³/s)" class="rounded-md p-2">
+                                    <input type="number" id="pdDuration" min="0" step="any" placeholder="Duration (optional)" class="rounded-md p-2">
+                                </span>
                                 <button onclick="addAttack('physical_damage')" class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg">Add</button>
                             </div>
                         </div>
@@ -341,17 +345,9 @@
                             <h3 class="font-semibold mb-2">Data Poisoning</h3>
                             <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
                                 <input type="number" id="dpTime" min="0" step="any" placeholder="Start Time (s)" class="rounded-md p-2">
-                                <input type="number" id="dpDuration" placeholder="Duration (s)" class="rounded-md p-2">
+                                <input type="number" id="dpDuration" min="0" step="any" placeholder="Duration (s)" class="rounded-md p-2">
                                 <select id="dpComponent" class="rounded-md p-2"></select>
-                                <select id="dpSensor" class="rounded-md p-2">
-                                    <option value="waterLevel">Water Level</option>
-                                    <option value="temperature">Temperature</option>
-                                    <option value="ph">pH</option>
-                                    <option value="o2">O2</option>
-                                    <option value="bodn">BODn</option>
-                                    <option value="nitrate">Nitrate</option>
-                                    <option value="co2">CO2</option>
-                                </select>
+                                <select id="dpSensor" class="rounded-md p-2"></select>
                                 <input type="number" id="dpValue" placeholder="Fake Value" class="rounded-md p-2">
                                 <button onclick="addAttack('data_poisoning')" class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg">Add</button>
                             </div>

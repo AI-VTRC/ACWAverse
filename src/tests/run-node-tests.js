@@ -424,6 +424,9 @@ async function main() {
     assert.ok(uiSource.includes('Number.isFinite(attack.time)'));
     assert.ok(uiSource.includes('escapeHtml(action.componentId)'));
     assert.ok(uiSource.includes('escapeHtml(attack.componentId)'));
+    assert.ok(uiSource.includes('validateAttackList'));
+    assert.ok(uiSource.includes('updateDataPoisoningOptions'));
+    assert.ok(uiSource.includes('pdLeakRate'));
   });
 
   test('build synchronizes fresh source before the GitHub Pages workflow deploys docs', () => {
@@ -483,8 +486,8 @@ async function main() {
     const rows = out.results;
     assert.notStrictEqual(rows[0]['tA_waterLevel'], 9);
     assert.strictEqual(rows[0]['tA_waterLevel_reported'], 9);
-    assert.strictEqual(rows[5]['tA_waterLevel_reported'], 9);
-    assert.strictEqual(rows[6]['tA_waterLevel_reported'], undefined);
+    assert.strictEqual(rows[4]['tA_waterLevel_reported'], 9);
+    assert.strictEqual(rows[5]['tA_waterLevel_reported'], undefined);
   });
 
   test('valve closed blocks traversal', () => {
@@ -524,8 +527,8 @@ async function main() {
     const net = { components:[ { id:'t', type:'tank', ph: 6.5 } ], pipes: [] };
     E.applyAttack(net, { type:'chemical_dosing', componentId:'t', chemicalType:'acid', amount: 2 });
     assert.strictEqual(net.components[0].ph, 4.5);
-    const net2 = { components:[ { id:'s', type:'source', ph: 6 } ], pipes: [] };
-    E.applyAttack(net2, { type:'chemical_dosing', componentId:'s', chemicalType:'base', amount: 2.25 });
+    const net2 = { components:[ { id:'t2', type:'tank', ph: 6 } ], pipes: [] };
+    E.applyAttack(net2, { type:'chemical_dosing', componentId:'t2', chemicalType:'base', amount: 2.25 });
     assert.strictEqual(net2.components[0].ph, 8.25);
   });
 
@@ -580,7 +583,9 @@ async function main() {
     E.applyAttack(net, { type:'physical_damage', componentId:'v', damageType:'valve_stuck' });
     const v = net.components.find(c=>c.id==='v');
     const p = net.components.find(c=>c.id==='p');
-    assert.strictEqual(v.isOpen, false);
+    assert.strictEqual(v.isOpen, true);
+    assert.strictEqual(v.opening, 1);
+    assert.strictEqual(v.stuck, true);
     assert.strictEqual(p.power, 0);
   });
 
@@ -593,35 +598,35 @@ async function main() {
     const rows = out.results;
     assert.strictEqual(rows[4]['t_waterLevel'], 1); // before start
     assert.strictEqual(rows[5]['t_waterLevel_reported'], 7); // at start
-    assert.strictEqual(rows[7]['t_waterLevel_reported'], 7); // through end
-    assert.strictEqual(rows[8]['t_waterLevel_reported'], undefined); // after end
+    assert.strictEqual(rows[6]['t_waterLevel_reported'], 7); // inside [5,7)
+    assert.strictEqual(rows[7]['t_waterLevel_reported'], undefined); // exact end
   });
 
-  test('physical_damage valve_stuck blocks gravity flow from that tick onward', () => {
+  test('physical_damage valve_stuck freezes a closed valve and blocks future reopen controls', () => {
     const network = {
       components: [
         { id:'t1', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:Math.PI, waterLevel:1, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5 },
-        { id:'v', type:'valve', isOpen:true },
+        { id:'v', type:'valve', isOpen:false, opening:0 },
         { id:'t2', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:0, waterLevel:0, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5 }
       ],
       pipes: [ {from:'t1', to:'v'}, {from:'v', to:'t2'} ]
     };
-    // Without attack, Hazen flow should drain some volume
-    let out = E.run(network, [], [], [], 1, 20, 1);
-    const first = out.results[1];
-    assert.ok(first['t1_waterAmount'] < Math.PI);
-    // With attack at t=0, no gravity depletion at t=0
-    const network2 = JSON.parse(JSON.stringify(network));
-    out = E.run(network2, [], [], [ {time:0, type:'physical_damage', componentId:'v', damageType:'valve_stuck'} ], 1, 20, 1);
-    const first2 = out.results[1];
-    assert.ok(Math.abs(first2['t1_waterAmount'] - Math.PI) < 1e-9);
+    const controls = [ {time:1, componentId:'v', actionType:'set_valve_state', params:{state:'open'}} ];
+    const out = E.run(network, controls, [], [ {time:0, type:'physical_damage', componentId:'v', damageType:'valve_stuck'} ], 2, 20, 1);
+    assert.ok(approxEqual(out.results[2]['t1_waterAmount'], Math.PI));
+    const valve = out.simNetwork.components.find(c => c.id === 'v');
+    assert.strictEqual(valve.isOpen, false);
+    assert.strictEqual(valve.opening, 0);
+    assert.strictEqual(valve.stuck, true);
   });
 
-  test('physical_damage leak reduces waterAmount by 5% at attack tick', () => {
+  test('physical_damage leak removes water continuously at the configured rate', () => {
     const network = { components: [ {id:'t', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:10, waterLevel:0, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5 } ], pipes: [] };
-    const out = E.run(network, [], [], [ {time:0, type:'physical_damage', componentId:'t', damageType:'leak'} ], 0, 20, 1);
-    const first = out.results[0];
-    assert.ok(approxEqual(first['t_waterAmount'], 9.5));
+    const out = E.run(network, [], [], [ {time:0, type:'physical_damage', componentId:'t', damageType:'leak', leakRate:0.25, duration:2} ], 3, 20, 1);
+    assert.ok(approxEqual(out.results[0]['t_waterAmount'], 10));
+    assert.ok(approxEqual(out.results[1]['t_waterAmount'], 9.75));
+    assert.ok(approxEqual(out.results[2]['t_waterAmount'], 9.5));
+    assert.ok(approxEqual(out.results[3]['t_waterAmount'], 9.5));
   });
 
   test('simulation records attack labels in exported rows', () => {
@@ -632,7 +637,7 @@ async function main() {
       pipes: []
     };
     const attacks = [
-      { time:0, type:'physical_damage', componentId:'t', damageType:'leak' },
+      { time:0, type:'physical_damage', componentId:'t', damageType:'leak', leakRate:0.1 },
       { time:0, type:'data_poisoning', componentId:'t', poisonType:'waterLevel', value:9, duration:1 }
     ];
     const out = E.run(network, [], [], attacks, 0, 20, 1);
@@ -931,11 +936,11 @@ async function main() {
     const net = { components:[ {id:'t', type:'tank', shape:'cylindrical', radius:r, maxLevel:10, waterAmount: area, waterLevel: 0, temperature: 10 } ], pipes:[] };
     const attacks = [ { time:0, type:'data_poisoning', componentId:'t', poisonType:'waterLevel', value: 9, duration: 1 } ];
     const out = E.run(net, [], [], attacks, 2, 20, 1); // t=0..2, endTime=1
-    // Recording shows poisoned values at t=0 and t=1, then clears at t=2
+    // Half-open timing reports the poisoned value at t=0 and clears it exactly at t=1
     assert.strictEqual(out.results[0]['t_waterLevel_reported'], 9);
-    assert.strictEqual(out.results[1]['t_waterLevel_reported'], 9);
+    assert.strictEqual(out.results[1]['t_waterLevel_reported'], undefined);
     assert.strictEqual(out.results[2]['t_waterLevel_reported'], undefined);
-    // The engine should remove expired poisoning entries after t > endTime
+    // The engine should remove expired poisoning entries at endTime
     const comp = out.simNetwork.components.find(c => c.id==='t');
     assert.ok(!comp.poisonedReadings || comp.poisonedReadings.waterLevel === undefined);
   });
@@ -956,18 +961,17 @@ async function main() {
     assert.ok(Math.abs(out.simNetwork.components.find(c=>c.id==='t').ph - 5.5) < 1e-9);
   });
 
-  test('valve_stuck at t=0 prevents reopen rule from working (fixed behavior)', () => {
-    // Engine now properly sets a persistent "stuck" flag; rules cannot override
+  test('valve_stuck at t=0 freezes the current position and prevents reopen rules', () => {
     const network = {
       components: [
         { id:'t1', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:1.0, waterLevel:0, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5 },
-        { id:'v', type:'valve', isOpen:true },
+        { id:'v', type:'valve', isOpen:false, opening:0 },
         { id:'j', type:'junction' }
       ],
       pipes: [ {from:'t1', to:'v'}, {from:'v', to:'j'} ]
     };
     const rules = [ { source:{componentId:'t1', value:'waterAmount'}, condition:{operator:'>', threshold: 0}, target:{componentId:'v', actionType:'set_valve_state', params:{ state: 'open' }} } ];
-    // Attack closes valve at t=0 and sets stuck=true; rule cannot reopen it
+    // Attack freezes the closed valve at t=0; rule cannot reopen it
     const attacks = [ { time:0, type:'physical_damage', componentId:'v', damageType:'valve_stuck' } ];
     const out = E.run(network, [], rules, attacks, 1, 20, 1); // t=0..1
     const rows = out.results;
@@ -976,6 +980,8 @@ async function main() {
     // Verify valve component is marked as stuck
     const valve = out.simNetwork.components.find(c => c.id === 'v');
     assert.strictEqual(valve.stuck, true);
+    assert.strictEqual(valve.isOpen, false);
+    assert.strictEqual(valve.opening, 0);
   });
 
   test('chemical_interference negative amount clamps nitrate to lower bound 0', () => {
@@ -1022,6 +1028,105 @@ async function main() {
     // both at t=5; second overrides
     assert.ok(approxEqual(rows[5]['t_waterLevel'], 1));
     assert.strictEqual(rows[5]['t_waterLevel_reported'], 3);
+  });
+
+  test('poisoning expiration is an exact control event and does not extend a hydraulic interval', () => {
+    const network = {
+      components: [
+        {id:'src', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:Math.PI, waterLevel:1, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5},
+        {id:'p', type:'pump', maxFlowRate:0.1, power:0},
+        {id:'dst', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:0, waterLevel:0, temperature:20, ph:7, o2:8, bodn:2, nitrate:1, co2:5}
+      ],
+      pipes: [{from:'src', to:'p'}, {from:'p', to:'dst'}]
+    };
+    const rules = [
+      {source:{componentId:'src', value:'waterLevel'}, condition:{operator:'>', threshold:8}, target:{componentId:'p', actionType:'set_pump_power', params:{power:'100'}}},
+      {source:{componentId:'src', value:'waterLevel'}, condition:{operator:'<', threshold:2}, target:{componentId:'p', actionType:'set_pump_power', params:{power:'0'}}}
+    ];
+    const attacks = [{time:0, type:'data_poisoning', componentId:'src', poisonType:'waterLevel', value:9, duration:1}];
+    const out = E.run(network, [], rules, attacks, 2, 20, 1);
+    assert.strictEqual(out.results[0].p_power, 100);
+    assert.strictEqual(out.results[1].src_waterLevel_reported, undefined);
+    assert.strictEqual(out.results[1].p_power, 0);
+    assert.ok(out.results[1].dst_waterAmount > 0);
+    assert.ok(approxEqual(out.results[2].dst_waterAmount, out.results[1].dst_waterAmount));
+  });
+
+  test('active_attacks labels full poisoning windows and persistent physical damage', () => {
+    const network = {
+      components: [
+        {id:'t', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:Math.PI, waterLevel:1},
+        {id:'p', type:'pump', maxFlowRate:0.1, power:100}
+      ],
+      pipes: []
+    };
+    const attacks = [
+      {time:0, type:'data_poisoning', componentId:'t', poisonType:'waterLevel', value:9, duration:2},
+      {time:1, type:'physical_damage', componentId:'p', damageType:'pump_failure'}
+    ];
+    const out = E.run(network, [], [], attacks, 3, 20, 1);
+    assert.strictEqual(out.results[0].active_attacks, 'data_poisoning:t[waterLevel]');
+    assert.strictEqual(out.results[1].active_attacks, 'data_poisoning:t[waterLevel]; physical_damage:p[pump_failure]');
+    assert.strictEqual(out.results[2].active_attacks, 'physical_damage:p[pump_failure]');
+    assert.strictEqual(out.results[3].active_attacks, 'physical_damage:p[pump_failure]');
+  });
+
+  test('short overlapping poison window yields back to the still-active earlier attack', () => {
+    const net = { components:[ {id:'t', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:Math.PI, waterLevel:1} ], pipes:[] };
+    const attacks = [
+      {time:0, type:'data_poisoning', componentId:'t', poisonType:'waterLevel', value:7, duration:10},
+      {time:5, type:'data_poisoning', componentId:'t', poisonType:'waterLevel', value:3, duration:1}
+    ];
+    const out = E.run(net, [], [], attacks, 8, 20, 1);
+    assert.strictEqual(out.results[5].t_waterLevel_reported, 3);
+    assert.strictEqual(out.results[6].t_waterLevel_reported, 7);
+    assert.strictEqual(out.results[8].t_waterLevel_reported, 7);
+  });
+
+  test('legacy startTime attacks execute on the normalized engine timeline', () => {
+    const net = { components:[ {id:'t', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:Math.PI, waterLevel:1} ], pipes:[] };
+    const out = E.run(net, [], [], [{startTime:0, type:'data_poisoning', componentId:'t', poisonType:'waterLevel', value:9, duration:1}], 1, 20, 1);
+    assert.strictEqual(out.results[0].t_waterLevel_reported, 9);
+    assert.strictEqual(out.results[1].t_waterLevel_reported, undefined);
+  });
+
+  test('attack validation rejects malformed payloads, incompatible targets, and nonexistent sensors', () => {
+    const net = {
+      components: [
+        {id:'t', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:Math.PI, waterLevel:1, o2:8},
+        {id:'p', type:'pump', maxFlowRate:0.1, power:50},
+        {id:'s', type:'source', ph:7}
+      ],
+      pipes:[]
+    };
+    const attacks = [
+      {time:0, type:'chemical_interference', componentId:'t', chemical:'O2', amount:'abc'},
+      {time:0, type:'physical_damage', componentId:'p', damageType:'leak', leakRate:0.1},
+      {time:0, type:'data_poisoning', componentId:'t', poisonType:'nonexistent', value:9, duration:1},
+      {time:0, type:'chemical_dosing', componentId:'s', chemicalType:'acid', amount:1}
+    ];
+    const errors = E.validateAttackScenarios(net, attacks, 10);
+    assert.strictEqual(errors.length, 4);
+    assert.throws(() => E.run(net, [], [], attacks, 10, 20, 1), /Invalid attack scenarios/);
+    assert.strictEqual(E.applyAttack(net, attacks[0]), false);
+    assert.strictEqual(net.components.find(c => c.id === 't').o2, 8);
+  });
+
+  test('poisoning exports a reported value even when the injected value equals the actual value', () => {
+    const net = { components:[ {id:'t', type:'tank', shape:'cylindrical', radius:1, maxLevel:10, waterAmount:Math.PI, waterLevel:1} ], pipes:[] };
+    const out = E.run(net, [], [], [{time:0, type:'data_poisoning', componentId:'t', poisonType:'waterLevel', value:1, duration:1}], 0, 20, 1);
+    assert.strictEqual(out.results[0].t_waterLevel, 1);
+    assert.strictEqual(out.results[0].t_waterLevel_reported, 1);
+  });
+
+  test('valve_stuck preserves a partial opening instead of forcing the valve closed', () => {
+    const valve = {id:'v', type:'valve', isOpen:true, opening:0.4, flowRate:0.2};
+    const net = {components:[valve], pipes:[]};
+    assert.strictEqual(E.applyAttack(net, {type:'physical_damage', componentId:'v', damageType:'valve_stuck'}), true);
+    E.applyTimedControl(net, {time:1, componentId:'v', actionType:'set_valve_state', params:{state:'closed'}});
+    assert.strictEqual(valve.opening, 0.4);
+    assert.strictEqual(valve.isOpen, true);
+    assert.strictEqual(valve.stuck, true);
   });
 
   // Performance smoke  (small)

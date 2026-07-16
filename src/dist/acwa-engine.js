@@ -83,6 +83,127 @@
         phRelaxRate: 0.2
     };
     function deepCopy(obj) { return JSON.parse(JSON.stringify(obj)); }
+    const POISONABLE_FIELDS = {
+        [ComponentType.Tank]: ['waterLevel', 'waterAmount', 'temperature', 'ph', 'o2', 'bodn', 'nitrate', 'co2'],
+        [ComponentType.Source]: ['waterLevel', 'temperature', 'ph', 'o2', 'bodn', 'nitrate', 'co2', 'head'],
+        [ComponentType.Pump]: ['power', 'flowRate', 'efficiency', 'headGain', 'head'],
+        [ComponentType.Valve]: ['flowRate', 'opening'],
+        [ComponentType.Sink]: ['head'],
+        [ComponentType.Junction]: ['head']
+    };
+    function attackStartTime(attack) {
+        const value = attack.time ?? attack.startTime;
+        return typeof value === 'number' ? value : Number.NaN;
+    }
+    function attackEndTime(attack) {
+        const start = attackStartTime(attack);
+        if (attack.type === AttackType.DataPoisoning) {
+            return start + attack.duration;
+        }
+        if (attack.type === AttackType.PhysicalDamage && attack.damageType === 'leak' && attack.duration !== undefined) {
+            return start + attack.duration;
+        }
+        return undefined;
+    }
+    function poisoningEntries(comp, key) {
+        const stored = comp.poisonedReadings ? comp.poisonedReadings[key] : undefined;
+        if (!stored)
+            return [];
+        return Array.isArray(stored) ? stored : [stored];
+    }
+    function activePoisoning(comp, key, t) {
+        const active = poisoningEntries(comp, key).filter(poisoning => (poisoning.startTime === undefined || t >= poisoning.startTime) &&
+            (poisoning.endTime === undefined || t < poisoning.endTime));
+        return active.length ? active[active.length - 1] : undefined;
+    }
+    function validateAttackScenarios(simNetwork, attacks, duration) {
+        const errors = [];
+        if (!Array.isArray(attacks)) {
+            return ['Attack scenarios must be an array.'];
+        }
+        attacks.forEach((attack, index) => {
+            const prefix = `Attack ${index + 1}`;
+            if (!attack || typeof attack !== 'object') {
+                errors.push(`${prefix}: attack must be an object.`);
+                return;
+            }
+            const start = attackStartTime(attack);
+            if (!Number.isFinite(start) || start < 0) {
+                errors.push(`${prefix}: time must be a finite, non-negative number.`);
+            }
+            else if (duration !== undefined && start > duration) {
+                errors.push(`${prefix}: time ${start} exceeds simulation duration ${duration}.`);
+            }
+            const comp = simNetwork.components.find(component => component.id === attack.componentId);
+            if (!comp) {
+                errors.push(`${prefix}: component "${attack.componentId}" does not exist.`);
+                return;
+            }
+            switch (attack.type) {
+                case AttackType.ChemicalDosing:
+                    if (comp.type !== ComponentType.Tank) {
+                        errors.push(`${prefix}: chemical dosing requires a tank target.`);
+                    }
+                    if (attack.chemicalType !== 'acid' && attack.chemicalType !== 'base') {
+                        errors.push(`${prefix}: chemicalType must be "acid" or "base".`);
+                    }
+                    if (attack.amount !== undefined && (!Number.isFinite(attack.amount) || attack.amount <= 0)) {
+                        errors.push(`${prefix}: dosing amount must be a finite number greater than zero.`);
+                    }
+                    break;
+                case AttackType.ChemicalInterference:
+                    if (comp.type !== ComponentType.Tank) {
+                        errors.push(`${prefix}: chemical interference requires a tank target.`);
+                    }
+                    if (!['O2', 'BODn', 'nitrate', 'CO2'].includes(attack.chemical)) {
+                        errors.push(`${prefix}: unsupported chemical "${attack.chemical}".`);
+                    }
+                    if (!Number.isFinite(attack.amount)) {
+                        errors.push(`${prefix}: interference amount must be finite.`);
+                    }
+                    break;
+                case AttackType.PhysicalDamage:
+                    if (attack.damageType === 'pump_failure' && comp.type !== ComponentType.Pump) {
+                        errors.push(`${prefix}: pump_failure requires a pump target.`);
+                    }
+                    else if (attack.damageType === 'valve_stuck' && comp.type !== ComponentType.Valve) {
+                        errors.push(`${prefix}: valve_stuck requires a valve target.`);
+                    }
+                    else if (attack.damageType === 'leak') {
+                        if (comp.type !== ComponentType.Tank) {
+                            errors.push(`${prefix}: leak requires a tank target.`);
+                        }
+                        if (!Number.isFinite(attack.leakRate) || (attack.leakRate ?? 0) <= 0) {
+                            errors.push(`${prefix}: leakRate must be a finite number greater than zero.`);
+                        }
+                        if (attack.duration !== undefined && (!Number.isFinite(attack.duration) || attack.duration <= 0)) {
+                            errors.push(`${prefix}: leak duration must be a finite number greater than zero when provided.`);
+                        }
+                    }
+                    else if (!['pump_failure', 'valve_stuck', 'leak'].includes(attack.damageType)) {
+                        errors.push(`${prefix}: unsupported physical damage type "${attack.damageType}".`);
+                    }
+                    break;
+                case AttackType.DataPoisoning: {
+                    if (!Number.isFinite(attack.duration) || attack.duration <= 0) {
+                        errors.push(`${prefix}: poisoning duration must be a finite number greater than zero.`);
+                    }
+                    if (!Number.isFinite(attack.value)) {
+                        errors.push(`${prefix}: poisoned value must be finite.`);
+                    }
+                    const allowedFields = POISONABLE_FIELDS[comp.type] || [];
+                    if (!allowedFields.includes(attack.poisonType) || typeof comp[attack.poisonType] !== 'number') {
+                        errors.push(`${prefix}: "${attack.poisonType}" is not an available numeric sensor on ${comp.type} "${comp.id}".`);
+                    }
+                    break;
+                }
+                default:
+                    errors.push(`${prefix}: unsupported attack type "${String(attack.type)}".`);
+                    break;
+            }
+        });
+        return errors;
+    }
     function valveOpening(comp) {
         if (!comp || comp.type !== ComponentType.Valve)
             return 1;
@@ -587,69 +708,81 @@
         }
     }
     function applyAttack(simNetwork, attack) {
-        const comp = simNetwork.components.find(c => c.id === attack.componentId);
+        const normalizedAttack = attack.time === undefined && attack.startTime === undefined
+            ? { ...attack, time: 0 }
+            : attack;
+        if (validateAttackScenarios(simNetwork, [normalizedAttack]).length > 0)
+            return false;
+        const comp = simNetwork.components.find(c => c.id === normalizedAttack.componentId);
         if (!comp)
-            return;
-        switch (attack.type) {
+            return false;
+        const startTime = attackStartTime(normalizedAttack);
+        switch (normalizedAttack.type) {
             case AttackType.ChemicalDosing:
-                if (comp.type === ComponentType.Tank || comp.type === ComponentType.Source) {
-                    const rawAmount = typeof attack.amount === 'number' ? attack.amount : 1.5;
+                if (comp.type === ComponentType.Tank) {
+                    const rawAmount = typeof normalizedAttack.amount === 'number' ? normalizedAttack.amount : 1.5;
                     const amount = Math.max(0, rawAmount);
-                    if (attack.chemicalType === 'acid')
+                    if (normalizedAttack.chemicalType === 'acid')
                         comp.ph = Math.max(0, (comp.ph ?? 7) - amount);
-                    if (attack.chemicalType === 'base')
+                    if (normalizedAttack.chemicalType === 'base')
                         comp.ph = Math.min(14, (comp.ph ?? 7) + amount);
                 }
                 break;
             case AttackType.ChemicalInterference:
-                if (comp.type === ComponentType.Tank || comp.type === ComponentType.Source) {
-                    if (attack.chemical === 'O2')
-                        comp.o2 = Math.max(0, Math.min(15, (comp.o2 ?? 0) + attack.amount));
-                    if (attack.chemical === 'BODn')
-                        comp.bodn = Math.max(0, Math.min(10, (comp.bodn ?? 0) + attack.amount));
-                    if (attack.chemical === 'nitrate')
-                        comp.nitrate = Math.max(0, Math.min(5, (comp.nitrate ?? 0) + attack.amount));
-                    if (attack.chemical === 'CO2')
-                        comp.co2 = Math.max(0, Math.min(10, (comp.co2 ?? 0) + attack.amount));
+                if (comp.type === ComponentType.Tank) {
+                    if (normalizedAttack.chemical === 'O2')
+                        comp.o2 = Math.max(0, Math.min(15, (comp.o2 ?? 0) + normalizedAttack.amount));
+                    if (normalizedAttack.chemical === 'BODn')
+                        comp.bodn = Math.max(0, Math.min(10, (comp.bodn ?? 0) + normalizedAttack.amount));
+                    if (normalizedAttack.chemical === 'nitrate')
+                        comp.nitrate = Math.max(0, Math.min(5, (comp.nitrate ?? 0) + normalizedAttack.amount));
+                    if (normalizedAttack.chemical === 'CO2')
+                        comp.co2 = Math.max(0, Math.min(10, (comp.co2 ?? 0) + normalizedAttack.amount));
                 }
                 break;
             case AttackType.PhysicalDamage:
-                if (attack.damageType === 'pump_failure' && comp.type === ComponentType.Pump) {
+                if (normalizedAttack.damageType === 'pump_failure' && comp.type === ComponentType.Pump) {
                     comp.power = 0;
                     comp.efficiency = 0;
                     comp.stuck = true; // Prevent future control until manual reset
                 }
-                if (attack.damageType === 'valve_stuck' && comp.type === ComponentType.Valve) {
-                    comp.isOpen = false;
-                    comp.flowRate = 0;
-                    comp.flowSetpoint = 0;
-                    comp.opening = 0;
+                if (normalizedAttack.damageType === 'valve_stuck' && comp.type === ComponentType.Valve) {
+                    comp.opening = valveOpening(comp);
+                    comp.isOpen = comp.opening > 1e-6;
+                    if (!comp.isOpen)
+                        comp.flowRate = 0;
                     comp.stuck = true; // Prevent future control until manual reset
                 }
-                if (attack.damageType === 'leak' && comp.type === ComponentType.Tank) {
-                    comp.waterAmount *= 0.95;
-                    comp.stuck = true; // Mark tank as damaged
+                if (normalizedAttack.damageType === 'leak' && comp.type === ComponentType.Tank) {
+                    if (!comp.leakEffects)
+                        comp.leakEffects = [];
+                    comp.leakEffects.push({
+                        rate: normalizedAttack.leakRate,
+                        startTime,
+                        endTime: normalizedAttack.duration === undefined ? undefined : startTime + normalizedAttack.duration
+                    });
                 }
                 break;
             case AttackType.DataPoisoning:
                 if (!comp.poisonedReadings)
                     comp.poisonedReadings = {};
-                comp.poisonedReadings[attack.poisonType] = {
-                    value: attack.value,
-                    startTime: attack.time,
-                    endTime: attack.time + attack.duration
-                };
+                const existing = poisoningEntries(comp, normalizedAttack.poisonType);
+                existing.push({
+                    value: normalizedAttack.value,
+                    startTime,
+                    endTime: startTime + normalizedAttack.duration
+                });
+                comp.poisonedReadings[normalizedAttack.poisonType] = existing;
                 break;
         }
+        return true;
     }
     function getCurrentValue(sourceComp, key, t) {
         const baseValue = sourceComp[key];
         let v = typeof baseValue === 'number' ? baseValue : undefined;
-        const poisoned = sourceComp.poisonedReadings ? sourceComp.poisonedReadings[key] : undefined;
+        const poisoned = activePoisoning(sourceComp, key, t);
         if (poisoned) {
-            if ((poisoned.startTime === undefined || t >= poisoned.startTime) && (poisoned.endTime === undefined || t <= poisoned.endTime)) {
-                v = poisoned.value;
-            }
+            v = poisoned.value;
         }
         return v;
     }
@@ -765,11 +898,35 @@
             const readings = comp.poisonedReadings;
             if (!readings)
                 return;
-            Object.entries(readings).forEach(([key, poisoning]) => {
-                if (poisoning && poisoning.endTime !== undefined && t > poisoning.endTime) {
+            Object.keys(readings).forEach(key => {
+                const activeOrFuture = poisoningEntries(comp, key).filter(poisoning => poisoning.endTime === undefined || t < poisoning.endTime);
+                if (activeOrFuture.length === 0) {
                     delete readings[key];
                 }
+                else {
+                    readings[key] = activeOrFuture;
+                }
             });
+        });
+    }
+    function applyLeakLosses(simNetwork, intervalStart, intervalEnd) {
+        if (!Number.isFinite(intervalStart) || !Number.isFinite(intervalEnd) || intervalEnd <= intervalStart)
+            return;
+        simNetwork.components.forEach(comp => {
+            if (comp.type !== ComponentType.Tank || !comp.leakEffects || comp.leakEffects.length === 0)
+                return;
+            let leakedVolume = 0;
+            comp.leakEffects.forEach(effect => {
+                const activeStart = Math.max(intervalStart, effect.startTime);
+                const activeEnd = Math.min(intervalEnd, effect.endTime ?? intervalEnd);
+                if (activeEnd > activeStart) {
+                    leakedVolume += effect.rate * (activeEnd - activeStart);
+                }
+            });
+            comp.waterAmount = Math.max(0, comp.waterAmount - leakedVolume);
+            comp.leakEffects = comp.leakEffects.filter(effect => effect.endTime === undefined || intervalEnd < effect.endTime);
+            if (comp.leakEffects.length === 0)
+                delete comp.leakEffects;
         });
     }
     function applyPumpTransfers(simNetwork, timeStep) {
@@ -1010,15 +1167,10 @@
                 const actualValue = comp[key];
                 if (typeof actualValue !== 'number' || Number.isNaN(actualValue))
                     return;
-                let reported = actualValue;
-                const poisoned = comp.poisonedReadings ? comp.poisonedReadings[key] : undefined;
-                if (poisoned) {
-                    if ((poisoned.startTime === undefined || t >= poisoned.startTime) && (poisoned.endTime === undefined || t <= poisoned.endTime)) {
-                        reported = poisoned.value;
-                    }
-                }
+                const poisoned = activePoisoning(comp, key, t);
+                const reported = poisoned ? poisoned.value : actualValue;
                 step[`${comp.id}_${key}`] = actualValue;
-                if (reported !== actualValue) {
+                if (poisoned) {
                     step[`${comp.id}_${key}_reported`] = reported;
                 }
             });
@@ -1036,8 +1188,8 @@
                     return `${base}[${attack.chemical}]`;
             }
         };
-        const labels = meta.attacksAtT.map(describeAttack).filter(Boolean);
-        step.active_attacks = labels.join('; ');
+        const labels = (meta.activeAttacks ?? meta.attacksAtT).map(describeAttack).filter(Boolean);
+        step.active_attacks = Array.from(new Set(labels)).join('; ');
         return step;
     }
     function step(simNetwork, t, ctx) {
@@ -1048,9 +1200,10 @@
         clearExpiredPoisoning(simNetwork, t);
         applyPumpTransfers(simNetwork, timeStep);
         applyPassiveFlows(simNetwork, timeStep);
+        applyLeakLosses(simNetwork, t, t + timeStep);
         updateTanks(simNetwork, ambientTemp, timeStep);
         applyTankKinetics(simNetwork, timeStep);
-        return recordStep(simNetwork, t, { attacksAtT: attacksAtT || [] });
+        return recordStep(simNetwork, t, { attacksAtT: attacksAtT || [], activeAttacks: attacksAtT || [] });
     }
     function run(network, controlActions = [], conditionalActions = [], attackScenarios = [], duration, ambientTemp, timeStep) {
         if (!Number.isFinite(duration) || duration < 0) {
@@ -1058,6 +1211,10 @@
         }
         if (!Number.isFinite(timeStep) || timeStep <= 0) {
             throw new RangeError('Simulation timeStep must be a finite number greater than zero.');
+        }
+        const attackErrors = validateAttackScenarios(network, attackScenarios, duration);
+        if (attackErrors.length) {
+            throw new RangeError(`Invalid attack scenarios:\n${attackErrors.join('\n')}`);
         }
         const simNetwork = deepCopy(network);
         const results = [];
@@ -1073,8 +1230,13 @@
             }
         });
         attackScenarios.forEach(attack => {
-            if (Number.isFinite(attack.time) && attack.time >= 0 && attack.time <= duration) {
-                timeline.push(attack.time);
+            const start = attackStartTime(attack);
+            if (Number.isFinite(start) && start >= 0 && start <= duration) {
+                timeline.push(start);
+            }
+            const end = attackEndTime(attack);
+            if (end !== undefined && Number.isFinite(end) && end >= 0 && end <= duration) {
+                timeline.push(end);
             }
         });
         timeline.sort((left, right) => left - right);
@@ -1082,19 +1244,31 @@
         updateTanks(simNetwork, ambientTemp, 0);
         uniqueTimeline.forEach((current, index) => {
             if (index > 0) {
-                const elapsed = current - uniqueTimeline[index - 1];
+                const previous = uniqueTimeline[index - 1];
+                const elapsed = current - previous;
                 applyPumpTransfers(simNetwork, elapsed);
                 applyPassiveFlows(simNetwork, elapsed);
+                applyLeakLosses(simNetwork, previous, current);
                 updateTanks(simNetwork, ambientTemp, elapsed);
                 applyTankKinetics(simNetwork, elapsed);
             }
             const controlsAtT = controlActions.filter(action => sameTime(action.time, current));
-            const attacksAtT = attackScenarios.filter(attack => sameTime(attack.time, current));
+            const attacksAtT = attackScenarios.filter(attack => sameTime(attackStartTime(attack), current));
             controlsAtT.forEach(action => applyTimedControl(simNetwork, action));
             attacksAtT.forEach(attack => applyAttack(simNetwork, attack));
             applyConditionalActions(simNetwork, conditionalActions, current);
             clearExpiredPoisoning(simNetwork, current);
-            results.push(recordStep(simNetwork, current, { attacksAtT }));
+            const activeAttacks = attackScenarios.filter(attack => {
+                const start = attackStartTime(attack);
+                if (current < start && !sameTime(current, start))
+                    return false;
+                if (attack.type === AttackType.ChemicalDosing || attack.type === AttackType.ChemicalInterference) {
+                    return sameTime(current, start);
+                }
+                const end = attackEndTime(attack);
+                return end === undefined || (current < end && !sameTime(current, end));
+            });
+            results.push(recordStep(simNetwork, current, { attacksAtT, activeAttacks }));
         });
         return { simNetwork, results };
     }
@@ -1114,7 +1288,9 @@
         clearExpiredPoisoning,
         applyPumpTransfers,
         applyPassiveFlows,
+        applyLeakLosses,
         updateTanks,
+        validateAttackScenarios,
         recordStep,
         step,
         run,
