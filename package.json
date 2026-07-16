@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node scripts/sync-docs.js",
     "build:watch": "tsc --watch",
     "test": "npm run build && node src/tests/run-node-tests.js",
-    "deploy:local": "npm run build && mkdir -p docs && cp -r src/* docs/ && cp src/index.html docs/index.html && touch docs/.nojekyll"
+    "deploy:local": "npm run build"
   },
   "devDependencies": {
     "typescript": "^5.4.0"

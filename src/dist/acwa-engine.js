@@ -194,6 +194,94 @@
         }
         return null;
     }
+    function collectDownstreamPaths(simNetwork, startComponentId) {
+        const componentsById = new Map(simNetwork.components.map(comp => [comp.id, comp]));
+        const outgoing = new Map();
+        (simNetwork.pipes || []).forEach(pipe => {
+            const list = outgoing.get(pipe.from) || [];
+            list.push(pipe);
+            outgoing.set(pipe.from, list);
+        });
+        const paths = [];
+        function walk(currentId, pipes, components, visited) {
+            (outgoing.get(currentId) || []).forEach(pipe => {
+                const next = componentsById.get(pipe.to);
+                if (!next || visited.has(next.id) || next.type === ComponentType.Pump)
+                    return;
+                const nextPipes = [...pipes, pipe];
+                const nextComponents = [...components, next];
+                if (next.type === ComponentType.Tank) {
+                    paths.push({
+                        entity: { kind: ComponentType.Tank, comp: next },
+                        pipes: nextPipes,
+                        components: nextComponents
+                    });
+                    return;
+                }
+                if (next.type === ComponentType.Sink) {
+                    paths.push({
+                        entity: { kind: ComponentType.Sink, comp: next },
+                        pipes: nextPipes,
+                        components: nextComponents
+                    });
+                    return;
+                }
+                if (next.type !== ComponentType.Junction && next.type !== ComponentType.Valve)
+                    return;
+                if (next.type === ComponentType.Valve && !isValveOpen(next))
+                    return;
+                const nextVisited = new Set(visited);
+                nextVisited.add(next.id);
+                walk(next.id, nextPipes, nextComponents, nextVisited);
+            });
+        }
+        walk(startComponentId, [], [], new Set([startComponentId]));
+        return paths;
+    }
+    function collectUpstreamPaths(simNetwork, startComponentId) {
+        const componentsById = new Map(simNetwork.components.map(comp => [comp.id, comp]));
+        const incoming = new Map();
+        (simNetwork.pipes || []).forEach(pipe => {
+            const list = incoming.get(pipe.to) || [];
+            list.push(pipe);
+            incoming.set(pipe.to, list);
+        });
+        const paths = [];
+        function walk(currentId, pipes, components, visited) {
+            (incoming.get(currentId) || []).forEach(pipe => {
+                const previous = componentsById.get(pipe.from);
+                if (!previous || visited.has(previous.id) || previous.type === ComponentType.Pump)
+                    return;
+                const nextPipes = [pipe, ...pipes];
+                const nextComponents = [previous, ...components];
+                if (previous.type === ComponentType.Tank) {
+                    paths.push({
+                        entity: { kind: ComponentType.Tank, comp: previous },
+                        pipes: nextPipes,
+                        components: nextComponents
+                    });
+                    return;
+                }
+                if (previous.type === ComponentType.Source) {
+                    paths.push({
+                        entity: { kind: ComponentType.Source, comp: previous },
+                        pipes: nextPipes,
+                        components: nextComponents
+                    });
+                    return;
+                }
+                if (previous.type !== ComponentType.Junction && previous.type !== ComponentType.Valve)
+                    return;
+                if (previous.type === ComponentType.Valve && !isValveOpen(previous))
+                    return;
+                const nextVisited = new Set(visited);
+                nextVisited.add(previous.id);
+                walk(previous.id, nextPipes, nextComponents, nextVisited);
+            });
+        }
+        walk(startComponentId, [], [], new Set([startComponentId]));
+        return paths;
+    }
     function componentHead(comp) {
         const elevation = typeof comp.baseElevation === 'number' ? comp.baseElevation :
             (typeof comp.elevation === 'number' ? comp.elevation : 0);
@@ -249,7 +337,10 @@
             const K = computeHazenK(pipe);
             return { type: 'hazen', K, n: 1.852 };
         }
-        return { type: 'linear', R: 1e6 };
+        // Unconfigured UI pipes use a conservative quadratic resistance. Keeping
+        // the same model in both directions makes head-loss and flow calculations
+        // true mathematical inverses.
+        return { type: 'darcy', R: 1e6 };
     }
     function computeFlowRateFromHead(pipe, headDiff) {
         if (!pipe)
@@ -262,11 +353,8 @@
         if (resistance.type === 'hazen') {
             rate = Math.pow(absHead / resistance.K, 1 / resistance.n);
         }
-        else if (resistance.type === 'darcy') {
-            rate = Math.sqrt(absHead / resistance.R);
-        }
         else {
-            rate = absHead / resistance.R;
+            rate = Math.sqrt(absHead / resistance.R);
         }
         if (typeof pipe.maxFlowRate === 'number' && pipe.maxFlowRate >= 0) {
             rate = Math.min(rate, pipe.maxFlowRate);
@@ -279,26 +367,143 @@
         const absFlow = Math.abs(flowRate);
         if (absFlow < 1e-12)
             return 0;
-        if (pipe.hw) {
-            const n = typeof pipe.hw.n === 'number' ? pipe.hw.n : 1.852;
-            const K = typeof pipe.hw.K === 'number' && pipe.hw.K > 0 ? pipe.hw.K : computeHazenK(pipe);
-            return K * Math.pow(absFlow, n);
+        const resistance = computePipeResistance(pipe);
+        if (resistance.type === 'hazen') {
+            return resistance.K * Math.pow(absFlow, resistance.n);
         }
-        if (pipe.dw) {
-            const f = ensurePositive(pipe.dw.f, 0);
-            const length = ensurePositive(pipe.dw.length || pipe.length, 1);
-            const diameter = ensurePositive(pipe.dw.diameter || pipe.diameter, 1);
-            if (f > 0) {
-                const coeff = (f * 8 * length) / (Math.PI * Math.PI * GRAVITY * Math.pow(diameter, 5));
-                return coeff * absFlow * absFlow;
+        return resistance.R * absFlow * absFlow;
+    }
+    function pathHeadLoss(pipes, flowRate) {
+        return pipes.reduce((total, pipe) => total + computeHeadLoss(pipe, flowRate), 0);
+    }
+    function pathOpeningFactor(components) {
+        return components.reduce((factor, comp) => {
+            if (comp.type === ComponentType.Valve && typeof comp.flowSetpoint === 'number') {
+                return Math.min(factor, comp.flowSetpoint > 0 ? 1 : 0);
+            }
+            return Math.min(factor, valveOpening(comp));
+        }, 1);
+    }
+    function pathFlowLimit(pipes, components) {
+        let limit = Number.POSITIVE_INFINITY;
+        pipes.forEach(pipe => {
+            if (typeof pipe.maxFlowRate === 'number' && pipe.maxFlowRate >= 0) {
+                limit = Math.min(limit, pipe.maxFlowRate);
+            }
+        });
+        components.forEach(comp => {
+            if (comp.type !== ComponentType.Valve)
+                return;
+            if (typeof comp.maxFlowRate === 'number' && comp.maxFlowRate >= 0) {
+                limit = Math.min(limit, comp.maxFlowRate);
+            }
+            if (typeof comp.flowSetpoint === 'number' && comp.flowSetpoint >= 0) {
+                limit = Math.min(limit, comp.flowSetpoint);
+            }
+        });
+        return limit;
+    }
+    function solvePathFlowForHead(pipes, components, availableHead) {
+        if (pipes.length === 0 || availableHead <= 1e-12)
+            return 0;
+        const openingFactor = pathOpeningFactor(components);
+        if (openingFactor <= 1e-6)
+            return 0;
+        let high = Number.POSITIVE_INFINITY;
+        pipes.forEach(pipe => {
+            const pipeRate = Math.abs(computeFlowRateFromHead(pipe, availableHead));
+            high = Math.min(high, pipeRate);
+        });
+        high = Math.min(high, pathFlowLimit(pipes, components));
+        if (!Number.isFinite(high))
+            high = 1;
+        if (high <= 0)
+            return 0;
+        let low = 0;
+        for (let iter = 0; iter < 40; iter++) {
+            const mid = (low + high) / 2;
+            if (pathHeadLoss(pipes, mid) <= availableHead) {
+                low = mid;
+            }
+            else {
+                high = mid;
             }
         }
-        if (pipe.diameter) {
-            const K = computeHazenK(pipe);
-            return K * Math.pow(absFlow, 1.852);
+        return low * openingFactor;
+    }
+    function applyFlowCandidates(candidates, timeStep) {
+        if (timeStep <= 0 || candidates.length === 0)
+            return;
+        const candidateRates = candidates.map(candidate => Math.max(0, candidate.flowRate));
+        const resourceGroups = new Map();
+        function registerResource(resource, limit, candidateIndex) {
+            if (!Number.isFinite(limit) || limit < 0)
+                return;
+            const group = resourceGroups.get(resource) || { limit, indices: new Set() };
+            group.limit = Math.min(group.limit, limit);
+            group.indices.add(candidateIndex);
+            resourceGroups.set(resource, group);
         }
-        const R = 1e6;
-        return (absFlow * absFlow) * R;
+        candidates.forEach((candidate, index) => {
+            candidate.pipes.forEach(pipe => {
+                if (typeof pipe.maxFlowRate === 'number') {
+                    registerResource(pipe, pipe.maxFlowRate, index);
+                }
+            });
+            candidate.components.forEach(comp => {
+                if (comp.type !== ComponentType.Valve)
+                    return;
+                if (typeof comp.maxFlowRate === 'number') {
+                    registerResource(comp, comp.maxFlowRate, index);
+                }
+                if (typeof comp.flowSetpoint === 'number') {
+                    registerResource(comp, comp.flowSetpoint, index);
+                }
+            });
+        });
+        resourceGroups.forEach(group => {
+            const total = Array.from(group.indices).reduce((sum, index) => sum + candidateRates[index], 0);
+            if (total <= group.limit || total <= 0)
+                return;
+            const scale = group.limit / total;
+            group.indices.forEach(index => {
+                candidateRates[index] *= scale;
+            });
+        });
+        const scaledVolumes = candidateRates.map(rate => rate * timeStep);
+        const requestedByTank = new Map();
+        candidates.forEach((candidate, index) => {
+            if (candidate.from.kind !== ComponentType.Tank)
+                return;
+            requestedByTank.set(candidate.from.comp.id, (requestedByTank.get(candidate.from.comp.id) || 0) + scaledVolumes[index]);
+        });
+        candidates.forEach((candidate, index) => {
+            if (candidate.from.kind !== ComponentType.Tank)
+                return;
+            const requested = requestedByTank.get(candidate.from.comp.id) || 0;
+            if (requested > candidate.from.comp.waterAmount && requested > 0) {
+                scaledVolumes[index] *= candidate.from.comp.waterAmount / requested;
+            }
+        });
+        const supplySnapshots = new Map();
+        candidates.forEach(candidate => {
+            if (!supplySnapshots.has(candidate.from.comp.id)) {
+                supplySnapshots.set(candidate.from.comp.id, { ...candidate.from.comp });
+            }
+        });
+        candidates.forEach((candidate, index) => {
+            const volume = scaledVolumes[index];
+            if (volume <= 0 || candidate.from.comp.id === candidate.to.comp.id)
+                return;
+            if (candidate.from.kind === ComponentType.Tank) {
+                candidate.from.comp.waterAmount = Math.max(0, candidate.from.comp.waterAmount - volume);
+            }
+            if (candidate.to.kind === ComponentType.Tank) {
+                const supply = supplySnapshots.get(candidate.from.comp.id);
+                if (supply)
+                    mixIntoTank(candidate.to.comp, supply, volume);
+            }
+        });
     }
     function mixIntoTank(tank, supplyComp, volume) {
         if (volume <= 0)
@@ -339,6 +544,7 @@
             comp.power = Math.max(0, Math.min(100, isFinite(powerValue) ? powerValue : 0));
         }
         if (action.actionType === TimedActionType.SetValveState && comp.type === ComponentType.Valve) {
+            comp.flowSetpoint = undefined;
             const raw = String(action.params.state ?? '').toLowerCase();
             if (raw.endsWith('%')) {
                 const pct = parseFloat(raw);
@@ -368,7 +574,8 @@
         }
         if (action.actionType === TimedActionType.SetValveFlow && comp.type === ComponentType.Valve) {
             const flow = parseFloat(action.params.flowRate ?? '0');
-            const numericFlow = isFinite(flow) ? flow : 0;
+            const numericFlow = Math.max(0, isFinite(flow) ? flow : 0);
+            comp.flowSetpoint = numericFlow;
             comp.flowRate = numericFlow;
             comp.isOpen = numericFlow > 0;
             if (typeof comp.maxFlowRate === 'number' && comp.maxFlowRate > 0) {
@@ -415,6 +622,7 @@
                 if (attack.damageType === 'valve_stuck' && comp.type === ComponentType.Valve) {
                     comp.isOpen = false;
                     comp.flowRate = 0;
+                    comp.flowSetpoint = 0;
                     comp.opening = 0;
                     comp.stuck = true; // Prevent future control until manual reset
                 }
@@ -483,6 +691,7 @@
                     break;
                 case ConditionalActionType.EmergencyClose:
                     if (targetComp.type === ComponentType.Valve) {
+                        targetComp.flowSetpoint = 0;
                         targetComp.isOpen = false;
                         targetComp.flowRate = 0;
                         targetComp.opening = 0;
@@ -504,6 +713,7 @@
                     break;
                 case ConditionalActionType.SetValveState:
                     if (targetComp.type === ComponentType.Valve) {
+                        targetComp.flowSetpoint = undefined;
                         const raw = String(params.state ?? '').toLowerCase();
                         if (raw.endsWith('%')) {
                             const pct = parseFloat(raw);
@@ -535,7 +745,8 @@
                 case ConditionalActionType.SetValveFlow:
                     if (targetComp.type === ComponentType.Valve) {
                         const flowRate = parseFloat(params.flowRate ?? '0');
-                        const rate = isFinite(flowRate) ? flowRate : 0;
+                        const rate = Math.max(0, isFinite(flowRate) ? flowRate : 0);
+                        targetComp.flowSetpoint = rate;
                         targetComp.flowRate = rate;
                         targetComp.isOpen = rate > 0;
                         if (typeof targetComp.maxFlowRate === 'number' && targetComp.maxFlowRate > 0) {
@@ -566,133 +777,110 @@
         pumps.forEach(pump => {
             if ((pump.power ?? 0) <= 0)
                 return;
-            const inPipe = nextIncomingTo(simNetwork, pump.id);
-            const outPipe = nextOutgoingFrom(simNetwork, pump.id);
-            if (!inPipe || !outPipe)
-                return;
-            const sourceEntity = findSourceEntity(simNetwork, inPipe.from);
-            if (!sourceEntity)
-                return;
-            const destEntity = findDestEntity(simNetwork, outPipe.to);
-            if (!destEntity || destEntity.kind !== ComponentType.Tank)
-                return;
-            const destTank = destEntity.comp;
-            const supplyComp = sourceEntity.comp;
-            const infiniteSource = sourceEntity.kind !== ComponentType.Tank;
-            const sourceHead = entityHead(sourceEntity);
-            const destHead = entityHead(destEntity);
-            if (sourceHead === undefined || destHead === undefined)
-                return;
-            const staticHead = destHead - sourceHead;
             const maxFlowRated = Math.max(0, pump.maxFlowRate || 0);
             const powerFactor = Math.max(0, Math.min(1, pump.power / 100));
             const efficiency = (pump.efficiency !== undefined) ? Math.max(0, Math.min(1, pump.efficiency)) : 1.0;
-            const inFromComp = simNetwork.components.find(c => c.id === inPipe.from);
-            const inToComp = simNetwork.components.find(c => c.id === inPipe.to);
-            const outFromComp = simNetwork.components.find(c => c.id === outPipe.from);
-            const outToComp = simNetwork.components.find(c => c.id === outPipe.to);
-            const valveFactor = Math.min(valveOpening(inFromComp), valveOpening(inToComp), valveOpening(outFromComp), valveOpening(outToComp));
-            if (valveFactor <= 1e-6)
-                return;
-            let maxFlow = maxFlowRated * powerFactor * efficiency * valveFactor;
+            let pumpCapacity = maxFlowRated * powerFactor * efficiency;
             if (typeof pump.maxThroughput === 'number')
-                maxFlow = Math.min(maxFlow, pump.maxThroughput);
-            if (maxFlow <= 0)
+                pumpCapacity = Math.min(pumpCapacity, pump.maxThroughput);
+            if (pumpCapacity <= 0)
                 return;
-            function feasible(flow) {
-                const lossIn = computeHeadLoss(inPipe, flow);
-                const lossOut = computeHeadLoss(outPipe, flow);
-                const requiredHead = staticHead + lossIn + lossOut;
-                const availableHead = computePumpHead(pump, flow);
-                return availableHead >= requiredHead;
+            const upstreamPaths = collectUpstreamPaths(simNetwork, pump.id);
+            const downstreamPaths = collectDownstreamPaths(simNetwork, pump.id);
+            if (upstreamPaths.length === 0 || downstreamPaths.length === 0)
+                return;
+            const branches = upstreamPaths.flatMap(upstream => downstreamPaths.map(downstream => {
+                const sourceHead = entityHead(upstream.entity);
+                const destHead = entityHead(downstream.entity);
+                return {
+                    source: upstream.entity,
+                    dest: downstream.entity,
+                    staticHead: sourceHead !== undefined && destHead !== undefined ? destHead - sourceHead : Number.POSITIVE_INFINITY,
+                    pipes: [...upstream.pipes, ...downstream.pipes],
+                    components: [...upstream.components, ...downstream.components]
+                };
+            })).filter(branch => (Number.isFinite(branch.staticHead) &&
+                branch.source.comp.id !== branch.dest.comp.id));
+            if (branches.length === 0)
+                return;
+            function branchCapacity(branch, totalPumpFlow) {
+                const availableHead = computePumpHead(pump, totalPumpFlow) - branch.staticHead;
+                return solvePathFlowForHead(branch.pipes, branch.components, availableHead);
             }
             let low = 0;
-            let high = maxFlow;
-            let flowRate = 0;
-            if (!feasible(0))
-                return;
-            for (let iter = 0; iter < 25; iter++) {
+            let high = pumpCapacity;
+            for (let iter = 0; iter < 40; iter++) {
                 const mid = (low + high) / 2;
-                if (feasible(mid)) {
-                    flowRate = mid;
+                const supportedFlow = branches.reduce((sum, branch) => sum + branchCapacity(branch, mid), 0);
+                if (supportedFlow >= mid) {
                     low = mid;
                 }
                 else {
                     high = mid;
                 }
-                if (high - low < 1e-6)
-                    break;
             }
-            let volume = flowRate * timeStep;
-            if (!infiniteSource) {
-                const sourceTank = supplyComp;
-                const available = sourceTank.waterAmount;
-                volume = Math.min(volume, available);
-            }
-            if (volume <= 0)
+            const totalFlow = low;
+            if (totalFlow <= 1e-12)
                 return;
-            mixIntoTank(destTank, supplyComp, volume);
-            if (!infiniteSource) {
-                const sourceTank = supplyComp;
-                sourceTank.waterAmount -= volume;
-            }
-            // mixIntoTank already set destTank waterAmount, so avoid double add
+            const branchFlows = branches.map(branch => branchCapacity(branch, totalFlow));
+            const branchTotal = branchFlows.reduce((sum, flow) => sum + flow, 0);
+            if (branchTotal <= 1e-12)
+                return;
+            const scale = Math.min(1, totalFlow / branchTotal);
+            const candidates = branches.map((branch, index) => ({
+                from: branch.source,
+                to: branch.dest,
+                flowRate: branchFlows[index] * scale,
+                pipes: branch.pipes,
+                components: branch.components
+            })).filter(candidate => candidate.flowRate > 1e-12);
+            applyFlowCandidates(candidates, timeStep);
         });
     }
     function applyPassiveFlows(simNetwork, timeStep) {
-        (simNetwork.pipes || []).forEach(pipe => {
-            const fromComp = simNetwork.components.find(c => c.id === pipe.from);
-            const toComp = simNetwork.components.find(c => c.id === pipe.to);
-            if (!fromComp || !toComp)
-                return;
-            if (fromComp.type === ComponentType.Pump || toComp.type === ComponentType.Pump)
-                return;
-            const valveFactor = Math.min(valveOpening(fromComp), valveOpening(toComp));
-            if (valveFactor <= 1e-6)
-                return;
-            let upstreamEntity = findSourceEntity(simNetwork, pipe.from);
-            if (!upstreamEntity && fromComp.type === ComponentType.Source) {
-                upstreamEntity = { kind: ComponentType.Source, comp: fromComp };
+        const origins = [];
+        simNetwork.components.forEach(comp => {
+            if (comp.type === ComponentType.Tank) {
+                origins.push({ kind: ComponentType.Tank, comp });
             }
-            let downstreamEntity = findDestEntity(simNetwork, pipe.to);
-            if (!downstreamEntity && toComp.type === ComponentType.Sink) {
-                downstreamEntity = { kind: ComponentType.Sink, comp: toComp };
-            }
-            if (!upstreamEntity || !downstreamEntity)
-                return;
-            const headUp = entityHead(upstreamEntity);
-            const headDown = entityHead(downstreamEntity);
-            if (headUp === undefined || headDown === undefined)
-                return;
-            let flowRate = computeFlowRateFromHead(pipe, headUp - headDown) * valveFactor;
-            if (Math.abs(flowRate) < 1e-12)
-                return;
-            const direction = flowRate >= 0 ? 1 : -1;
-            const fromEntity = direction >= 0 ? upstreamEntity : downstreamEntity;
-            const toEntity = direction >= 0 ? downstreamEntity : upstreamEntity;
-            let volume = Math.abs(flowRate) * timeStep;
-            if (fromEntity.kind === ComponentType.Tank) {
-                const sourceTank = fromEntity.comp;
-                volume = Math.min(volume, sourceTank.waterAmount);
-            }
-            if (volume <= 0)
-                return;
-            if (fromEntity.kind === ComponentType.Tank) {
-                const sourceTank = fromEntity.comp;
-                sourceTank.waterAmount -= volume;
-            }
-            if (toEntity.kind === ComponentType.Tank) {
-                const destTank = toEntity.comp;
-                if (fromEntity.kind === ComponentType.Tank) {
-                    const tankSupply = fromEntity.comp;
-                    mixIntoTank(destTank, tankSupply, volume);
-                }
-                else if (fromEntity.kind === ComponentType.Source) {
-                    const sourceSupply = fromEntity.comp;
-                    mixIntoTank(destTank, sourceSupply, volume);
-                }
+            if (comp.type === ComponentType.Source) {
+                origins.push({ kind: ComponentType.Source, comp });
             }
         });
+        const candidates = [];
+        origins.forEach(origin => {
+            collectDownstreamPaths(simNetwork, origin.comp.id).forEach(path => {
+                if (origin.comp.id === path.entity.comp.id)
+                    return;
+                const headUp = entityHead(origin);
+                const headDown = entityHead(path.entity);
+                if (headUp === undefined || headDown === undefined)
+                    return;
+                const headDiff = headUp - headDown;
+                const flowRate = solvePathFlowForHead(path.pipes, path.components, Math.abs(headDiff));
+                if (flowRate <= 1e-12)
+                    return;
+                if (headDiff >= 0) {
+                    candidates.push({
+                        from: origin,
+                        to: path.entity,
+                        flowRate,
+                        pipes: path.pipes,
+                        components: path.components
+                    });
+                }
+                else if (path.entity.kind === ComponentType.Tank) {
+                    candidates.push({
+                        from: { kind: ComponentType.Tank, comp: path.entity.comp },
+                        to: origin,
+                        flowRate,
+                        pipes: path.pipes,
+                        components: path.components
+                    });
+                }
+            });
+        });
+        applyFlowCandidates(candidates, timeStep);
     }
     function updateTanks(simNetwork, ambientTemp, timeStep) {
         const tanks = simNetwork.components.filter((c) => c.type === ComponentType.Tank);
@@ -710,6 +898,14 @@
             }
             area = area > 0 ? area : 1;
             tank.waterAmount = Math.max(0, tank.waterAmount);
+            // If the tank exceeds capacity, spill the excess and track it explicitly.
+            // This keeps the hydraulic head consistent with the physical capacity limit.
+            const capacity = (typeof tank.maxLevel === 'number' ? Math.max(0, tank.maxLevel) : 0) * area;
+            if (Number.isFinite(capacity) && tank.waterAmount > capacity) {
+                const overflow = tank.waterAmount - capacity;
+                tank.overflowVolume = (typeof tank.overflowVolume === 'number' ? tank.overflowVolume : 0) + overflow;
+                tank.waterAmount = capacity;
+            }
             tank.waterLevel = tank.waterAmount / area;
             tank.waterLevel = Math.min(tank.waterLevel, tank.maxLevel);
             const currentTemp = tank.temperature ?? ambientTemp;
@@ -850,51 +1046,56 @@
         (attacksAtT || []).forEach(a => applyAttack(simNetwork, a));
         applyConditionalActions(simNetwork, rules || [], t);
         clearExpiredPoisoning(simNetwork, t);
-        // Iterative hydraulic solver: solve network continuity and energy relations iteratively
-        // The solver iterates to refine flow calculations based on updated head distribution
-        // This ensures mass balance at junctions and energy balance around loops
-        const tanks = simNetwork.components.filter((c) => c.type === ComponentType.Tank);
-        const needsIteration = tanks.length > 1 && simNetwork.pipes.some(p => {
-            const fromTank = tanks.find(t => t.id === p.from);
-            const toTank = tanks.find(t => t.id === p.to);
-            return fromTank && toTank;
-        });
-        const maxIterations = needsIteration ? 3 : 1;
-        const convergenceTolerance = 1e-2;
-        const initialWaterAmounts = tanks.map(t => t.waterAmount);
-        for (let iter = 0; iter < maxIterations; iter++) {
-            const prevWaterAmounts = tanks.map(t => t.waterAmount);
-            applyPumpTransfers(simNetwork, timeStep);
-            applyPassiveFlows(simNetwork, timeStep);
-            updateTanks(simNetwork, ambientTemp, timeStep);
-            let maxChange = 0;
-            tanks.forEach((tank, idx) => {
-                const change = Math.abs(tank.waterAmount - prevWaterAmounts[idx]);
-                if (change > maxChange)
-                    maxChange = change;
-            });
-            if (maxChange < convergenceTolerance * timeStep)
-                break;
-            if (iter < maxIterations - 1 && needsIteration) {
-                tanks.forEach((tank, idx) => {
-                    tank.waterAmount = initialWaterAmounts[idx];
-                });
-                updateTanks(simNetwork, ambientTemp, 0);
-            }
-        }
-        // Apply water quality kinetics after hydraulic convergence
+        applyPumpTransfers(simNetwork, timeStep);
+        applyPassiveFlows(simNetwork, timeStep);
+        updateTanks(simNetwork, ambientTemp, timeStep);
         applyTankKinetics(simNetwork, timeStep);
         return recordStep(simNetwork, t, { attacksAtT: attacksAtT || [] });
     }
     function run(network, controlActions = [], conditionalActions = [], attackScenarios = [], duration, ambientTemp, timeStep) {
+        if (!Number.isFinite(duration) || duration < 0) {
+            throw new RangeError('Simulation duration must be a finite, non-negative number.');
+        }
+        if (!Number.isFinite(timeStep) || timeStep <= 0) {
+            throw new RangeError('Simulation timeStep must be a finite number greater than zero.');
+        }
         const simNetwork = deepCopy(network);
         const results = [];
-        for (let current = 0; current <= duration; current += timeStep) {
-            const controlsAtT = controlActions.filter(a => a.time === current);
-            const attacksAtT = attackScenarios.filter(a => a.time === current);
-            const rec = step(simNetwork, current, { timeStep, ambientTemp, controlsAtT, attacksAtT, rules: conditionalActions });
-            results.push(rec);
+        const epsilon = Math.max(1e-9, timeStep * 1e-9);
+        const sameTime = (left, right) => Math.abs(left - right) <= epsilon;
+        const timeline = [0, duration];
+        for (let index = 1; index * timeStep < duration - epsilon; index++) {
+            timeline.push(index * timeStep);
         }
+        controlActions.forEach(action => {
+            if (Number.isFinite(action.time) && action.time >= 0 && action.time <= duration) {
+                timeline.push(action.time);
+            }
+        });
+        attackScenarios.forEach(attack => {
+            if (Number.isFinite(attack.time) && attack.time >= 0 && attack.time <= duration) {
+                timeline.push(attack.time);
+            }
+        });
+        timeline.sort((left, right) => left - right);
+        const uniqueTimeline = timeline.filter((time, index) => index === 0 || !sameTime(time, timeline[index - 1]));
+        updateTanks(simNetwork, ambientTemp, 0);
+        uniqueTimeline.forEach((current, index) => {
+            if (index > 0) {
+                const elapsed = current - uniqueTimeline[index - 1];
+                applyPumpTransfers(simNetwork, elapsed);
+                applyPassiveFlows(simNetwork, elapsed);
+                updateTanks(simNetwork, ambientTemp, elapsed);
+                applyTankKinetics(simNetwork, elapsed);
+            }
+            const controlsAtT = controlActions.filter(action => sameTime(action.time, current));
+            const attacksAtT = attackScenarios.filter(attack => sameTime(attack.time, current));
+            controlsAtT.forEach(action => applyTimedControl(simNetwork, action));
+            attacksAtT.forEach(attack => applyAttack(simNetwork, attack));
+            applyConditionalActions(simNetwork, conditionalActions, current);
+            clearExpiredPoisoning(simNetwork, current);
+            results.push(recordStep(simNetwork, current, { attacksAtT }));
+        });
         return { simNetwork, results };
     }
     function startSimulationPure(state, settings) {

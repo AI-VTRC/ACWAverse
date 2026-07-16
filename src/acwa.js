@@ -3,6 +3,24 @@
 // --- Simple HTML Visualization ---
 let isVisInitialized = false;
 
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    })[character]);
+}
+
+function safeClassToken(value) {
+    return String(value ?? '').replace(/[^a-zA-Z0-9_-]/g, '-');
+}
+
+function attackStartTime(attack) {
+    return attack.time ?? attack.startTime;
+}
+
 //don't test this
 function initVisualization() {
     const container = document.getElementById('network-visualizer-container');
@@ -770,7 +788,7 @@ function generateConnectivityMatrix() {
     headerRow.innerHTML = '<th>From/To</th>';
     network.components.forEach(comp => {
         const th = document.createElement('th');
-        th.innerHTML = `${comp.id}<br><span class="component-type-badge badge-${comp.type}">${comp.type}</span>`;
+        th.innerHTML = `${escapeHtml(comp.id)}<br><span class="component-type-badge badge-${safeClassToken(comp.type)}">${escapeHtml(comp.type)}</span>`;
         headerRow.appendChild(th);
     });
     table.appendChild(headerRow);
@@ -781,7 +799,7 @@ function generateConnectivityMatrix() {
         
         // First cell (row header)
         const rowHeader = document.createElement('td');
-        rowHeader.innerHTML = `${fromComp.id}<br><span class="component-type-badge badge-${fromComp.type}">${fromComp.type}</span>`;
+        rowHeader.innerHTML = `${escapeHtml(fromComp.id)}<br><span class="component-type-badge badge-${safeClassToken(fromComp.type)}">${escapeHtml(fromComp.type)}</span>`;
         row.appendChild(rowHeader);
         
         // Data cells
@@ -1028,23 +1046,26 @@ function updateInitialConditions() {
                 const rawValue = comp[field.key];
                 const defaultValue = field.defaultValue !== undefined ? field.defaultValue : '';
                 let value = rawValue !== undefined ? rawValue : defaultValue;
-                if (field.type === 'number' && (value === '' || value === undefined || value === null)) value = 0;
+                if (field.type === 'number') {
+                    const numericValue = Number(value);
+                    value = Number.isFinite(numericValue) ? numericValue : 0;
+                }
                 if (field.type === 'select') value = String(value);
 
                 if (field.type === 'number') {
                     const attrs = [
                         `type="number"`,
-                        `data-id="${comp.id}"`,
-                        `data-param="${field.key}"`,
+                        `data-id="${escapeHtml(comp.id)}"`,
+                        `data-param="${escapeHtml(field.key)}"`,
                         `data-type="number"`,
-                        `value="${value}"`
+                        `value="${escapeHtml(value)}"`
                     ];
-                    if (field.min !== undefined) attrs.push(`min="${field.min}"`);
-                    if (field.max !== undefined) attrs.push(`max="${field.max}"`);
-                    if (field.step !== undefined) attrs.push(`step="${field.step}"`);
-                    const unit = field.unit ? ` ${field.unit}` : '';
+                    if (field.min !== undefined) attrs.push(`min="${escapeHtml(field.min)}"`);
+                    if (field.max !== undefined) attrs.push(`max="${escapeHtml(field.max)}"`);
+                    if (field.step !== undefined) attrs.push(`step="${escapeHtml(field.step)}"`);
+                    const unit = field.unit ? ` ${escapeHtml(field.unit)}` : '';
                     return `<div>
-                                <label class="block text-xs font-medium text-gray-500">${field.label} ${unit}</label>
+                                <label class="block text-xs font-medium text-gray-500">${escapeHtml(field.label)} ${unit}</label>
                                 <input ${attrs.join(' ')} class="w-full rounded-md p-1 border-gray-300 shadow-sm sm:text-sm">
                             </div>`;
                 }
@@ -1052,11 +1073,11 @@ function updateInitialConditions() {
                 if (field.type === 'select') {
                     const options = (field.options || []).map(opt => {
                         const selected = opt.value === value ? 'selected' : '';
-                        return `<option value="${opt.value}" ${selected}>${opt.label}</option>`;
+                        return `<option value="${escapeHtml(opt.value)}" ${selected}>${escapeHtml(opt.label)}</option>`;
                     }).join('');
                     return `<div>
-                                <label class="block text-xs font-medium text-gray-500">${field.label}</label>
-                                <select data-id="${comp.id}" data-param="${field.key}" data-type="boolean" class="w-full rounded-md p-1 border-gray-300 shadow-sm sm:text-sm">
+                                <label class="block text-xs font-medium text-gray-500">${escapeHtml(field.label)}</label>
+                                <select data-id="${escapeHtml(comp.id)}" data-param="${escapeHtml(field.key)}" data-type="boolean" class="w-full rounded-md p-1 border-gray-300 shadow-sm sm:text-sm">
                                     ${options}
                                 </select>
                             </div>`;
@@ -1068,7 +1089,7 @@ function updateInitialConditions() {
 
         const div = document.createElement('div');
         div.className = 'p-3 border rounded-lg';
-        div.innerHTML = `<h4 class="font-medium">${comp.id} (${comp.type})</h4>
+        div.innerHTML = `<h4 class="font-medium">${escapeHtml(comp.id)} (${escapeHtml(comp.type)})</h4>
                          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-2">
                              ${fieldsHtml}
                          </div>`;
@@ -1263,10 +1284,10 @@ function updateConditionalActionParams() {
 }
 
 function addControlAction() {
-    const time = document.getElementById('controlTime').value;
+    const time = parseFloat(document.getElementById('controlTime').value);
     const componentId = document.getElementById('controlComponent').value;
     const actionType = document.getElementById('controlAction').value;
-    if (!time || !componentId || !actionType) return;
+    if (!Number.isFinite(time) || time < 0 || !componentId || !actionType) return;
     const component = network.components.find(c => c.id === componentId);
     if (!component) return;
     const allowedActions = getTimedActionsForType(component.type);
@@ -1279,7 +1300,7 @@ function addControlAction() {
     else if (actionType === 'set_valve_state') params.state = document.getElementById('valveState').value;
     else if (actionType === 'set_valve_flow') params.flowRate = document.getElementById('valveFlow').value;
 
-    controlActions.push({ time: parseInt(time), componentId, actionType, params });
+    controlActions.push({ time, componentId, actionType, params });
     controlActions.sort((a, b) => a.time - b.time);
     updateControlActionsTable();
 }
@@ -1289,8 +1310,8 @@ function updateControlActionsTable() {
     tableBody.innerHTML = '';
     controlActions.forEach((action, index) => {
         const row = tableBody.insertRow();
-        row.innerHTML = `<td class="px-6 py-4">${action.time}</td><td class="px-6 py-4">${action.componentId}</td>
-                            <td class="px-6 py-4">${action.actionType}</td><td class="px-6 py-4">${JSON.stringify(action.params)}</td>
+        row.innerHTML = `<td class="px-6 py-4">${escapeHtml(action.time)}</td><td class="px-6 py-4">${escapeHtml(action.componentId)}</td>
+                            <td class="px-6 py-4">${escapeHtml(action.actionType)}</td><td class="px-6 py-4">${escapeHtml(JSON.stringify(action.params))}</td>
                             <td class="px-6 py-4 whitespace-nowrap space-x-2">
                             <button onclick="openEditTimedActionModal(${index})" class="text-blue-500 hover:text-blue-700">Edit</button>
                             <button onclick="deleteTimedAction(${index})" class="text-red-500 hover:text-red-700">Delete</button>
@@ -1319,7 +1340,7 @@ function addConditionalAction() {
         }
     };
     const targetActionSelect = document.getElementById('cond_target_action');
-    if (!rule.source.componentId || !rule.target.componentId || !targetActionSelect || targetActionSelect.disabled || !rule.target.actionType) {
+    if (!rule.source.componentId || !Number.isFinite(rule.condition.threshold) || !rule.target.componentId || !targetActionSelect || targetActionSelect.disabled || !rule.target.actionType) {
         return;
     }
 
@@ -1354,8 +1375,8 @@ function updateConditionalActionsTable() {
         const paramsText = Object.keys(rule.target.params || {}).length ? ` with ${JSON.stringify(rule.target.params)}` : '';
         const actionText = `THEN ${rule.target.componentId} performs ${actionLabel}${paramsText}`;
         const row = tableBody.insertRow();
-        row.innerHTML = `<td class="px-6 py-4">${conditionText}</td>
-                            <td class="px-6 py-4">${actionText}</td>
+        row.innerHTML = `<td class="px-6 py-4">${escapeHtml(conditionText)}</td>
+                            <td class="px-6 py-4">${escapeHtml(actionText)}</td>
                             <td class="px-6 py-4"><button onclick="removeConditionalAction(${index})" class="text-red-500">Remove</button></td>`;
     });
 }
@@ -1365,7 +1386,7 @@ function removeConditionalAction(index) { conditionalActions.splice(index, 1); u
 function addAttack(type) {
     let attack = { type };
     if (type === 'chemical_dosing') {
-        attack.time = parseInt(document.getElementById('cdTime').value);
+        attack.time = parseFloat(document.getElementById('cdTime').value);
         attack.componentId = document.getElementById('cdComponent').value;
         attack.chemicalType = document.getElementById('cdChemicalType').value;
         const amountRaw = document.getElementById('cdAmount').value;
@@ -1373,47 +1394,47 @@ function addAttack(type) {
         attack.amount = isNaN(parsedAmount) ? 1.5 : parsedAmount;
         
         // Validate chemical dosing attack
-        if (!attack.time || !attack.componentId || !attack.chemicalType || attack.amount <= 0) {
+        if (!Number.isFinite(attack.time) || attack.time < 0 || !attack.componentId || !attack.chemicalType || attack.amount <= 0) {
             alert('Please fill in all fields for the chemical dosing attack: Time, Component, Chemical Type, and Amount > 0.');
             return;
         }
     } else if (type === 'chemical_interference') {
-        attack.time = parseInt(document.getElementById('ciTime').value);
+        attack.time = parseFloat(document.getElementById('ciTime').value);
         attack.componentId = document.getElementById('ciComponent').value;
         attack.chemical = document.getElementById('ciChemical').value;
         attack.amount = parseFloat(document.getElementById('ciAmount').value);
         
         // Validate chemical interference attack
-        if (!attack.time || !attack.componentId || !attack.chemical || isNaN(attack.amount)) {
+        if (!Number.isFinite(attack.time) || attack.time < 0 || !attack.componentId || !attack.chemical || isNaN(attack.amount)) {
             alert('Please fill in all fields for the chemical interference attack: Time, Component, Chemical, and Amount.');
             return;
         }
     } else if (type === 'physical_damage') {
-        attack.time = parseInt(document.getElementById('pdTime').value);
+        attack.time = parseFloat(document.getElementById('pdTime').value);
         attack.componentId = document.getElementById('pdComponent').value;
         attack.damageType = document.getElementById('pdType').value;
         
         // Validate physical damage attack
-        if (!attack.time || !attack.componentId || !attack.damageType) {
+        if (!Number.isFinite(attack.time) || attack.time < 0 || !attack.componentId || !attack.damageType) {
             alert('Please fill in all fields for the physical damage attack: Time, Component, and Damage Type.');
             return;
         }
     } else if (type === 'data_poisoning') {
-        attack.time = parseInt(document.getElementById('dpTime').value);
-        attack.duration = parseInt(document.getElementById('dpDuration').value);
+        attack.time = parseFloat(document.getElementById('dpTime').value);
+        attack.duration = parseFloat(document.getElementById('dpDuration').value);
         attack.componentId = document.getElementById('dpComponent').value;
         attack.poisonType = document.getElementById('dpSensor').value;
         attack.value = parseFloat(document.getElementById('dpValue').value);
         
         // Validate data poisoning attack
-        if (!attack.time || !attack.duration || !attack.componentId || !attack.poisonType || isNaN(attack.value)) {
+        if (!Number.isFinite(attack.time) || attack.time < 0 || !Number.isFinite(attack.duration) || attack.duration <= 0 || !attack.componentId || !attack.poisonType || isNaN(attack.value)) {
             alert('Please fill in all fields for the data poisoning attack: Start Time, Duration, Component, Sensor Type, and Value.');
             return;
         }
     }
     if(attack.time !== undefined || attack.startTime !== undefined) {
         attackScenarios.push(attack);
-        attackScenarios.sort((a, b) => (a.time || a.startTime) - (b.time || b.startTime));
+        attackScenarios.sort((a, b) => attackStartTime(a) - attackStartTime(b));
         updateAttacksTable();
         
         // Clear the form fields after successful addition
@@ -1438,25 +1459,25 @@ function updateAttacksTable() {
         switch(attack.type) {
             case 'chemical_dosing': 
                 details = `Type: ${attack.chemicalType}, Amount: ${attack.amount}`; 
-                timeDisplay = `${attack.time || attack.startTime}`;
+                timeDisplay = `${attackStartTime(attack)}`;
                 break;
             case 'chemical_interference': 
                 details = `Chemical: ${attack.chemical}, Amount: ${attack.amount}`; 
-                timeDisplay = `${attack.time || attack.startTime}`;
+                timeDisplay = `${attackStartTime(attack)}`;
                 break;
             case 'physical_damage': 
                 details = `Damage: ${attack.damageType}`; 
-                timeDisplay = `${attack.time || attack.startTime}`;
+                timeDisplay = `${attackStartTime(attack)}`;
                 break;
             case 'data_poisoning': 
                 details = `Poison: ${attack.poisonType}, Value: ${attack.value}, Duration: ${attack.duration}s`; 
-                const startTime = attack.time || attack.startTime;
+                const startTime = attackStartTime(attack);
                 const endTime = startTime + attack.duration;
                 timeDisplay = `[${startTime}, ${endTime}]`;
                 break;
         }
-        row.innerHTML = `<td class="px-6 py-4">${timeDisplay}</td><td class="px-6 py-4">${attack.type}</td>
-                            <td class="px-6 py-4">${attack.componentId}</td><td class="px-6 py-4">${details}</td>
+        row.innerHTML = `<td class="px-6 py-4">${escapeHtml(timeDisplay)}</td><td class="px-6 py-4">${escapeHtml(attack.type)}</td>
+                            <td class="px-6 py-4">${escapeHtml(attack.componentId)}</td><td class="px-6 py-4">${escapeHtml(details)}</td>
                             <td class="px-6 py-4"><button onclick="removeAttack(${index})" class="text-red-500">Remove</button></td>`;
     });
 }
@@ -1568,36 +1589,41 @@ function openEditModal() {
         const shape = (component.shape || 'cylindrical').toLowerCase();
         let geometryInputs = '';
         if (shape === 'rectangular') {
+            const width = Number.isFinite(Number(component.width)) ? Number(component.width) : 2;
+            const height = Number.isFinite(Number(component.height)) ? Number(component.height) : 2;
             geometryInputs = `
                 <div>
                     <label for="edit_width" class="block text-sm font-medium text-gray-700">Width (m)</label>
-                    <input type="number" id="edit_width" value="${component.width || 2}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" min="0" step="0.1">
+                    <input type="number" id="edit_width" value="${width}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" min="0" step="0.1">
                 </div>
                 <div>
                     <label for="edit_height" class="block text-sm font-medium text-gray-700">Height (m)</label>
-                    <input type="number" id="edit_height" value="${component.height || 2}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" min="0" step="0.1">
+                    <input type="number" id="edit_height" value="${height}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" min="0" step="0.1">
                 </div>
             `;
         } else {
+            const radius = Number.isFinite(Number(component.radius)) ? Number(component.radius) : 1;
             geometryInputs = `
                 <div>
                     <label for="edit_radius" class="block text-sm font-medium text-gray-700">Radius (m)</label>
-                    <input type="number" id="edit_radius" value="${component.radius || 1}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" min="0" step="0.1">
+                    <input type="number" id="edit_radius" value="${radius}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" min="0" step="0.1">
                 </div>
             `;
         }
+        const maxLevel = Number.isFinite(Number(component.maxLevel)) ? Number(component.maxLevel) : 10;
         propsContainer.innerHTML = `
             <div>
                 <label for="edit_maxLevel" class="block text-sm font-medium text-gray-700">Max Level (Height)</label>
-                <input type="number" id="edit_maxLevel" value="${component.maxLevel || 10}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" min="0" step="0.1">
+                <input type="number" id="edit_maxLevel" value="${maxLevel}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" min="0" step="0.1">
             </div>
             ${geometryInputs}
         `;
     } else if (component.type === 'pump') {
+        const maxFlowRate = Number.isFinite(Number(component.maxFlowRate)) ? Number(component.maxFlowRate) : 0.5;
         propsContainer.innerHTML = `
             <div>
                 <label for="edit_maxFlowRate" class="block text-sm font-medium text-gray-700">Max Flow Rate (m³/s)</label>
-                <input type="number" id="edit_maxFlowRate" value="${component.maxFlowRate || 0.5}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                <input type="number" id="edit_maxFlowRate" value="${maxFlowRate}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
             </div>
         `;
     }
@@ -1709,8 +1735,9 @@ function updateEditControlActionParams(actionType, params = {}) {
     params = params || {};
 
     if (actionType === 'set_pump_power') {
+        const power = params.power ?? 100;
         paramsDiv.innerHTML = `<label for="edit_pumpPower" class="block text-sm font-medium text-gray-700">Power (%)</label>
-                                <input type="number" id="edit_pumpPower" value="${params.power || 100}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" min="0" max="100">`;
+                                <input type="number" id="edit_pumpPower" value="${escapeHtml(power)}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" min="0" max="100">`;
     } else if (actionType === 'set_valve_state') {
         paramsDiv.innerHTML = `<label for="edit_valveState" class="block text-sm font-medium text-gray-700">State</label>
                                 <select id="edit_valveState" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
@@ -1718,8 +1745,9 @@ function updateEditControlActionParams(actionType, params = {}) {
                                     <option value="closed" ${params.state === 'closed' ? 'selected' : ''}>Closed</option>
                                 </select>`;
     } else if (actionType === 'set_valve_flow') {
+        const flowRate = params.flowRate ?? 1.0;
         paramsDiv.innerHTML = `<label for="edit_valveFlow" class="block text-sm font-medium text-gray-700">Flow Rate (m³/s)</label>
-                                <input type="number" id="edit_valveFlow" value="${params.flowRate || 1.0}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" min="0" step="0.1">`;
+                                <input type="number" id="edit_valveFlow" value="${escapeHtml(flowRate)}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" min="0" step="0.1">`;
     }
 }
 
@@ -1728,6 +1756,8 @@ function updateEditControlActionParams(actionType, params = {}) {
 function saveTimedActionChanges() {
     const index = document.getElementById('editControlActionIndex').value;
     if (index === '' || !controlActions[index]) return;
+    const time = parseFloat(document.getElementById('editControlTime').value);
+    if (!Number.isFinite(time) || time < 0) return;
 
     const actionType = document.getElementById('editControlAction').value;
     const componentId = document.getElementById('editControlComponent').value;
@@ -1748,7 +1778,7 @@ function saveTimedActionChanges() {
     }
 
     controlActions[index] = {
-        time: parseInt(document.getElementById('editControlTime').value),
+        time,
         componentId,
         actionType: actionType,
         params: params
@@ -1929,9 +1959,13 @@ function renderAnalysisCharts() {
 // --- Simulation Engine ---
 function startSimulation() {
     console.log("Starting simulation...");
-    const duration = parseInt(document.getElementById('simDuration').value);
+    const duration = parseFloat(document.getElementById('simDuration').value);
     const ambientTemp = parseFloat(document.getElementById('ambientTemp').value);
     const timeStep = 1;
+    if (!Number.isFinite(duration) || duration < 0 || !Number.isFinite(ambientTemp)) {
+        alert('Simulation duration must be non-negative and ambient temperature must be numeric.');
+        return;
+    }
 
     document.querySelectorAll('#initial-conditions-container [data-param]').forEach(field => {
         const comp = network.components.find(c => c.id === field.dataset.id);
