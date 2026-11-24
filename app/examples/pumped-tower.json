@@ -1,0 +1,181 @@
+{
+  "format": "acwaverse/2",
+  "name": "Pump, tower and town",
+  "description": "The smallest complete water supply: a well pump lifts water to an elevated tank, the tank feeds a town by gravity, and an on/off level control starts and stops the pump. In the afternoon a command injection forces the pump off for three hours.",
+  "nodes": [
+    {
+      "id": "WELL",
+      "type": "reservoir",
+      "x": 80,
+      "y": 360,
+      "head": 8,
+      "label": "Well field",
+      "quality": {
+        "chlorine": 1
+      }
+    },
+    {
+      "id": "J1",
+      "type": "junction",
+      "x": 300,
+      "y": 360,
+      "elevation": 0,
+      "label": "Pump discharge"
+    },
+    {
+      "id": "TOWER",
+      "type": "tank",
+      "x": 560,
+      "y": 180,
+      "elevation": 35,
+      "shape": "cylinder",
+      "diameter": 10,
+      "height": 8,
+      "level": 4.5,
+      "whenFull": "spill",
+      "label": "Water tower"
+    },
+    {
+      "id": "TOWN",
+      "type": "junction",
+      "x": 820,
+      "y": 360,
+      "elevation": 5,
+      "demand": 0.02,
+      "pattern": [
+        0.6,
+        0.5,
+        0.5,
+        0.5,
+        0.6,
+        0.9,
+        1.3,
+        1.5,
+        1.4,
+        1.2,
+        1.1,
+        1.1,
+        1.1,
+        1,
+        1,
+        1.1,
+        1.2,
+        1.4,
+        1.5,
+        1.3,
+        1.1,
+        0.9,
+        0.8,
+        0.7
+      ],
+      "patternStep": 3600,
+      "requiredPressure": 14,
+      "label": "Town"
+    }
+  ],
+  "links": [
+    {
+      "id": "PU1",
+      "type": "pump",
+      "from": "WELL",
+      "to": "J1",
+      "shutoffHead": 60,
+      "maxFlow": 0.05,
+      "speed": 0,
+      "efficiency": 0.76,
+      "rampTime": 10,
+      "label": "Well pump"
+    },
+    {
+      "id": "P1",
+      "type": "pipe",
+      "from": "J1",
+      "to": "TOWER",
+      "length": 1000,
+      "diameter": 0.25,
+      "friction": "hazen-williams",
+      "roughness": 130,
+      "label": "Rising main"
+    },
+    {
+      "id": "P2",
+      "type": "pipe",
+      "from": "TOWER",
+      "to": "TOWN",
+      "length": 600,
+      "diameter": 0.25,
+      "friction": "hazen-williams",
+      "roughness": 130,
+      "label": "Supply main"
+    }
+  ],
+  "sensors": [
+    {
+      "id": "LT1",
+      "element": "TOWER",
+      "quantity": "level",
+      "label": "Tower level",
+      "noise": 0.01
+    },
+    {
+      "id": "FT1",
+      "element": "PU1",
+      "quantity": "flow",
+      "label": "Pump flow",
+      "noise": 0.0002
+    },
+    {
+      "id": "PT1",
+      "element": "TOWN",
+      "quantity": "pressure",
+      "label": "Town pressure",
+      "noise": 0.05
+    },
+    {
+      "id": "AT1",
+      "element": "TOWN",
+      "quantity": "chlorine",
+      "label": "Town chlorine",
+      "noise": 0.005
+    }
+  ],
+  "controllers": [
+    {
+      "id": "C1",
+      "type": "onoff",
+      "sensor": "LT1",
+      "actuator": "PU1",
+      "action": "fill",
+      "low": 3,
+      "high": 6.5,
+      "label": "Tower level control"
+    }
+  ],
+  "attacks": [
+    {
+      "id": "A1",
+      "type": "command_injection",
+      "actuator": "PU1",
+      "value": 0,
+      "start": 46800,
+      "duration": 10800,
+      "label": "Pump forced off"
+    }
+  ],
+  "simulation": {
+    "duration": 86400,
+    "timeStep": 30,
+    "reportStep": 300,
+    "ambientTemperature": 20,
+    "seed": 1
+  },
+  "quality": {
+    "temperature": 16,
+    "chlorine": 0.6,
+    "ph": 7.6,
+    "alkalinity": 120
+  },
+  "chemistry": {
+    "chlorineBulkDecay": 0.5
+  }
+}

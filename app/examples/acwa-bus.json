@@ -1,0 +1,448 @@
+{
+  "format": "acwaverse/2",
+  "name": "ACWA testbed, bus layout",
+  "description": "The ACWA laboratory testbed arranged as a bus: one pump feeds a common header and every tank is reached through its own branch valve, which closes when that tank is full. Data poisoning falsifies two level readings, physical damage jams a branch valve and opens a leak at tank 3, and chemical interference adds acid and nitrate.",
+  "nodes": [
+    {
+      "id": "SRC",
+      "type": "reservoir",
+      "x": 60,
+      "y": 200,
+      "head": 6,
+      "label": "Supply"
+    },
+    {
+      "id": "J0",
+      "type": "junction",
+      "x": 170,
+      "y": 200,
+      "elevation": 0
+    },
+    {
+      "id": "FEED",
+      "type": "tank",
+      "x": 310,
+      "y": 200,
+      "elevation": 0,
+      "shape": "box",
+      "width": 1,
+      "length": 1,
+      "height": 2,
+      "level": 1.5,
+      "whenFull": "spill",
+      "label": "Feed tank"
+    },
+    {
+      "id": "H1",
+      "type": "junction",
+      "x": 490,
+      "y": 200,
+      "elevation": 0
+    },
+    {
+      "id": "T1",
+      "type": "tank",
+      "x": 490,
+      "y": 460,
+      "elevation": 0,
+      "shape": "box",
+      "width": 1,
+      "length": 1,
+      "height": 2,
+      "level": 0.5,
+      "whenFull": "spill",
+      "label": "Tank 1"
+    },
+    {
+      "id": "H2",
+      "type": "junction",
+      "x": 660,
+      "y": 200,
+      "elevation": 0
+    },
+    {
+      "id": "T2",
+      "type": "tank",
+      "x": 660,
+      "y": 460,
+      "elevation": 0,
+      "shape": "box",
+      "width": 1,
+      "length": 1,
+      "height": 2,
+      "level": 0.5,
+      "whenFull": "spill",
+      "label": "Tank 2"
+    },
+    {
+      "id": "H3",
+      "type": "junction",
+      "x": 830,
+      "y": 200,
+      "elevation": 0
+    },
+    {
+      "id": "T3",
+      "type": "tank",
+      "x": 830,
+      "y": 460,
+      "elevation": 0,
+      "shape": "box",
+      "width": 1,
+      "length": 1,
+      "height": 2,
+      "level": 0.5,
+      "whenFull": "spill",
+      "label": "Tank 3"
+    },
+    {
+      "id": "H4",
+      "type": "junction",
+      "x": 1000,
+      "y": 200,
+      "elevation": 0
+    },
+    {
+      "id": "T4",
+      "type": "tank",
+      "x": 1000,
+      "y": 460,
+      "elevation": 0,
+      "shape": "box",
+      "width": 1,
+      "length": 1,
+      "height": 2,
+      "level": 0.5,
+      "whenFull": "spill",
+      "label": "Tank 4"
+    }
+  ],
+  "links": [
+    {
+      "id": "P0",
+      "type": "pipe",
+      "from": "SRC",
+      "to": "J0",
+      "length": 3,
+      "diameter": 0.05,
+      "friction": "hazen-williams",
+      "roughness": 130
+    },
+    {
+      "id": "V0",
+      "type": "valve",
+      "from": "J0",
+      "to": "FEED",
+      "kind": "ball",
+      "diameter": 0.05,
+      "mode": "flow",
+      "setting": 0.004,
+      "strokeTime": 5,
+      "label": "Inlet valve"
+    },
+    {
+      "id": "PU1",
+      "type": "pump",
+      "from": "FEED",
+      "to": "H1",
+      "shutoffHead": 10,
+      "maxFlow": 0.006,
+      "speed": 1,
+      "efficiency": 0.6,
+      "rampTime": 2,
+      "label": "Feed pump"
+    },
+    {
+      "id": "V1",
+      "type": "valve",
+      "from": "H1",
+      "to": "T1",
+      "kind": "ball",
+      "diameter": 0.05,
+      "mode": "position",
+      "setting": 1,
+      "strokeTime": 5,
+      "label": "Branch valve 1"
+    },
+    {
+      "id": "P1",
+      "type": "pipe",
+      "from": "H1",
+      "to": "H2",
+      "length": 3,
+      "diameter": 0.05,
+      "friction": "hazen-williams",
+      "roughness": 130
+    },
+    {
+      "id": "V2",
+      "type": "valve",
+      "from": "H2",
+      "to": "T2",
+      "kind": "ball",
+      "diameter": 0.05,
+      "mode": "position",
+      "setting": 1,
+      "strokeTime": 5,
+      "label": "Branch valve 2"
+    },
+    {
+      "id": "P2",
+      "type": "pipe",
+      "from": "H2",
+      "to": "H3",
+      "length": 3,
+      "diameter": 0.05,
+      "friction": "hazen-williams",
+      "roughness": 130
+    },
+    {
+      "id": "V3",
+      "type": "valve",
+      "from": "H3",
+      "to": "T3",
+      "kind": "ball",
+      "diameter": 0.05,
+      "mode": "position",
+      "setting": 1,
+      "strokeTime": 5,
+      "label": "Branch valve 3"
+    },
+    {
+      "id": "P3",
+      "type": "pipe",
+      "from": "H3",
+      "to": "H4",
+      "length": 3,
+      "diameter": 0.05,
+      "friction": "hazen-williams",
+      "roughness": 130
+    },
+    {
+      "id": "V4",
+      "type": "valve",
+      "from": "H4",
+      "to": "T4",
+      "kind": "ball",
+      "diameter": 0.05,
+      "mode": "position",
+      "setting": 1,
+      "strokeTime": 5,
+      "label": "Branch valve 4"
+    }
+  ],
+  "sensors": [
+    {
+      "id": "LT0",
+      "element": "FEED",
+      "quantity": "level",
+      "label": "Feed tank level",
+      "noise": 0.002
+    },
+    {
+      "id": "FT0",
+      "element": "V0",
+      "quantity": "flow",
+      "label": "Inlet flow",
+      "noise": 0.00002
+    },
+    {
+      "id": "FT1",
+      "element": "PU1",
+      "quantity": "flow",
+      "label": "Pump flow",
+      "noise": 0.00002
+    },
+    {
+      "id": "PT1",
+      "element": "H1",
+      "quantity": "pressure",
+      "label": "Header pressure",
+      "noise": 0.02
+    },
+    {
+      "id": "LT1",
+      "element": "T1",
+      "quantity": "level",
+      "label": "Tank 1 level",
+      "noise": 0.002
+    },
+    {
+      "id": "LT2",
+      "element": "T2",
+      "quantity": "level",
+      "label": "Tank 2 level",
+      "noise": 0.002
+    },
+    {
+      "id": "LT3",
+      "element": "T3",
+      "quantity": "level",
+      "label": "Tank 3 level",
+      "noise": 0.002
+    },
+    {
+      "id": "LT4",
+      "element": "T4",
+      "quantity": "level",
+      "label": "Tank 4 level",
+      "noise": 0.002
+    },
+    {
+      "id": "AT1",
+      "element": "T2",
+      "quantity": "ph",
+      "label": "Tank 2 pH",
+      "noise": 0.01
+    },
+    {
+      "id": "AT2",
+      "element": "T4",
+      "quantity": "nitrate",
+      "label": "Tank 4 nitrate",
+      "noise": 0.02
+    }
+  ],
+  "controllers": [
+    {
+      "id": "C1",
+      "type": "conditional",
+      "sensor": "LT0",
+      "operator": "<",
+      "threshold": 1.2,
+      "actuator": "V0",
+      "value": 0.004,
+      "label": "Feed tank low opens inlet"
+    },
+    {
+      "id": "C2",
+      "type": "conditional",
+      "sensor": "LT0",
+      "operator": ">",
+      "threshold": 1.8,
+      "actuator": "V0",
+      "value": 0,
+      "label": "Feed tank high closes inlet"
+    },
+    {
+      "id": "C3",
+      "type": "conditional",
+      "sensor": "LT0",
+      "operator": "<",
+      "threshold": 0.2,
+      "actuator": "PU1",
+      "value": 0,
+      "label": "Feed tank empty stops pump"
+    },
+    {
+      "id": "C4",
+      "type": "onoff",
+      "sensor": "LT1",
+      "actuator": "V1",
+      "action": "fill",
+      "low": 1.6,
+      "high": 1.8,
+      "label": "Tank 1 level closes its branch"
+    },
+    {
+      "id": "C5",
+      "type": "onoff",
+      "sensor": "LT2",
+      "actuator": "V2",
+      "action": "fill",
+      "low": 1.6,
+      "high": 1.8,
+      "label": "Tank 2 level closes its branch"
+    },
+    {
+      "id": "C6",
+      "type": "onoff",
+      "sensor": "LT3",
+      "actuator": "V3",
+      "action": "fill",
+      "low": 1.6,
+      "high": 1.8,
+      "label": "Tank 3 level closes its branch"
+    },
+    {
+      "id": "C7",
+      "type": "onoff",
+      "sensor": "LT4",
+      "actuator": "V4",
+      "action": "fill",
+      "low": 1.6,
+      "high": 1.8,
+      "label": "Tank 4 level closes its branch"
+    }
+  ],
+  "attacks": [
+    {
+      "id": "A1",
+      "type": "chemical_interference",
+      "node": "T2",
+      "substance": "acid",
+      "amount": 1.5,
+      "start": 180,
+      "label": "Acid into tank 2"
+    },
+    {
+      "id": "A2",
+      "type": "data_poisoning",
+      "sensor": "LT2",
+      "mode": "constant",
+      "value": 0.5,
+      "start": 250,
+      "duration": 550,
+      "label": "Tank 2 level reads low"
+    },
+    {
+      "id": "A3",
+      "type": "valve_stuck",
+      "valve": "V3",
+      "start": 360,
+      "duration": 300,
+      "label": "Branch valve 3 jams"
+    },
+    {
+      "id": "A4",
+      "type": "data_poisoning",
+      "sensor": "LT1",
+      "mode": "freeze",
+      "start": 450,
+      "duration": 300,
+      "label": "Tank 1 level frozen"
+    },
+    {
+      "id": "A5",
+      "type": "chemical_interference",
+      "node": "T4",
+      "substance": "nitrate",
+      "amount": 3,
+      "start": 540,
+      "label": "Nitrate into tank 4"
+    },
+    {
+      "id": "A6",
+      "type": "leak",
+      "node": "T3",
+      "diameter": 0.02,
+      "start": 700,
+      "duration": 150,
+      "label": "Leak at tank 3"
+    }
+  ],
+  "simulation": {
+    "duration": 900,
+    "timeStep": 1,
+    "reportStep": 5,
+    "ambientTemperature": 20,
+    "seed": 1
+  },
+  "quality": {
+    "temperature": 20,
+    "chlorine": 0.5,
+    "ph": 7.5,
+    "alkalinity": 100
+  },
+  "chemistry": {}
+}

@@ -2,18 +2,14 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "ES2020",
-    "lib": ["DOM", "ES2020"],
+    "moduleResolution": "bundler",
     "strict": true,
-    "noImplicitOverride": true,
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "rootDir": "src",
-    "outDir": "src/dist",
+    "noUnusedLocals": true,
+    "noImplicitReturns": true,
+    "rootDir": "engine/src",
+    "outDir": "build/engine",
     "declaration": false,
-    "sourceMap": true
+    "skipLibCheck": true
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["src/dist"]
+  "include": ["engine/src/**/*.ts"]
 }

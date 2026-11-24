@@ -3,208 +3,220 @@
 [![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-Live-brightgreen)](https://AI-VTRC.github.io/ACWAverse/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A comprehensive web-based cyber-physical water system simulator designed for cybersecurity research, attack analysis, and intelligent system development. ACWAverse integrates advanced hydraulic modeling, water quality simulation, and sophisticated cyber-attack scenarios to create a powerful platform for cyber-physical security analysis.
+A simulator for water systems as cyber-physical systems. You draw a plant
+(tanks, pipes, pumps, valves), put a control system on top of it (sensors and
+control actions), attack either one, and watch what the water does. Every run can
+be exported as a labelled table for training and testing attack detectors.
 
 **Developed at:** [A3 Lab](https://ai.bse.vt.edu) (AI Assurance and Applications) and [ACWA Lab](https://ai.bse.vt.edu/ACWA_Lab.html) (AI & Cyber for Water & Ag)  
 **Institution:** Virginia Polytechnic Institute and State University (Virginia Tech)
 
----
-
-## Overview
-
-Water Supply Systems (WSS) are cornerstones of modern society, yet they face unprecedented challenges in the 21st century, including escalating demand, aging infrastructure, and sophisticated cyber threats. High-profile incidents such as the 2021 Oldsmar, Florida water treatment cyberattack and the 2024 Muleshoe, Texas water system compromise underscore the real-world risks of data poisoning and unauthorized control in water utilities.
-
-ACWAverse addresses these critical challenges by providing a comprehensive simulation environment that concurrently models physical water distribution (hydraulics, quality) and sophisticated cyber-attack scenarios, creating a powerful tool for cybersecurity research and intelligent system development.
-
-### Key Features
-
-- **Modular 4-Layer Architecture**: Front-End Interface, Simulation Engine, Visualization Engine, and Data Management layers supporting unlimited network complexities
-- **Advanced Cyber-Attack Simulation**: Integrated cyber-attack simulation with duration-based effects, real-time data poisoning, chemical interference, and physical damage scenarios
-- **Comprehensive Hydraulic & Water Quality Modeling**: Advanced fluid dynamics, pump curves, valve logic, pH, DO, BOD, nitrate transport, and temperature modeling
-- **Real-Time Web-Based Interface**: Runs entirely in modern browsers, no installation required
-- **Digital Twin Functionality**: Enables real-time monitoring, predictive maintenance, and cyber-resilience assessment
-- **Dataset Generation for ML**: Extensive capabilities for generating synthetic datasets for machine learning research in cyber-physical security
-- **Interactive Visualization**: Multiple layout algorithms (topological, balanced, compact) with real-time attack visualization
-
-### Attack Semantics
-
-- Data-poisoning and finite leak windows use half-open timing: an attack starting at `t` with duration `d` is active on `[t, t + d)`. Attack end times are simulation events, so conditional controls return to actual sensor values at the exact end time.
-- Overlapping poisoning attacks on the same sensor use the most recently started active value; an earlier attack resumes if the newer window ends first.
-- Pump failures and stuck valves persist for the remainder of the simulation. A stuck valve freezes at its current opening rather than being forced closed.
-- Tank leaks remove water continuously at the configured rate in m³/s. A duration may be supplied; without one, the leak persists.
-- Chemical dosing and chemical interference are bounded, abstract state perturbations (`ΔpH` and `Δmg/L`) applied to tanks. They are not mass-dose, buffering, or reaction-equilibrium models.
-- Imported attack scenarios are validated against target component types, available numeric sensors, simulation duration, and finite parameter values before execution.
-
----
-
-## System Architecture
-
-ACWAverse employs a modular, modern web-based architecture consisting of:
-
-1. **Front-End Interface Layer**: Modern responsive web interface with real-time network visualization, interactive component management, and dynamic form controls
-2. **Simulation Engine**: Three integrated modules:
-   - **Hydraulic Simulation Module**: Advanced fluid dynamics calculations using graph-based topology management
-   - **Water Quality Module**: Comprehensive modeling of pH, DO, BOD, nitrate transport, disinfectant decay, and temperature
-   - **Cyber-Attack Simulation Module**: Data poisoning, chemical interference, and physical damage scenarios
-3. **Visualization Engine**: Chart.js for interactive time-series plots, HTML5 Canvas for network visualization, multiple layout algorithms
-4. **Data Management Layer**: JSON-based network configuration, CSV export capabilities
-
----
-
-## Research Applications
-
-### Cyber-Physical Security Research
-ACWAverse provides a comprehensive environment for studying attack propagation, system resilience, and defense mechanism effectiveness. Researchers can investigate how cyber-attacks affect physical system behavior, study attack cascading effects, and develop countermeasures for critical infrastructure protection.
-
-### Dataset Generation for Machine Learning
-The platform generates diverse attack scenarios with varying parameters, timing, and intensities, creating labeled datasets for training supervised learning models. Supports batch simulation runs with different network configurations, attack types, and environmental conditions.
-
-### Digital Twin Functionality
-ACWAverse serves as a digital twin environment for water infrastructure systems, enabling real-time monitoring, predictive maintenance, and cyber-resilience assessment without risk to physical infrastructure.
-
-### Meta-Learning for Attack Detection
-By generating diverse attack scenarios and system configurations, ACWAverse enables the training of meta-learning models that can quickly adapt to new attack types and system variations.
-
----
-
-## Getting Started
-
-### Access the Web Application
-
-ACWAverse is available as a web application. Once deployed via GitHub Pages, access it at:
-- `https://AI-VTRC.github.io/ACWAverse/`
-
-### Local Development
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/AI-VTRC/ACWAverse.git
-   cd ACWAverse
-   ```
-
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-
-3. **Build the TypeScript code**:
-   ```bash
-   npm run build
-   ```
-
-4. **Serve the application locally**:
-   ```bash
-   python -m http.server 8000 --directory src
-   # Or use any static file server
-   cd src && python -m http.server 8000
-   ```
-
-5. **Access the application**:
-   Open `http://localhost:8000` in your browser
-
-### Running Tests
-
-```bash
-npm test
-```
-
----
-
-## GitHub Pages Deployment
-
-This repository is configured to automatically deploy to GitHub Pages. Follow these steps to enable it:
-
-### 1. Enable GitHub Pages in Repository Settings
-
-1. Go to your repository on GitHub
-2. Navigate to **Settings** → **Pages**
-3. Under **Source**, select **GitHub Actions** (not "Deploy from a branch")
-4. The site will automatically deploy when you push to the `main` branch
-
-### 2. Automatic Deployment
-
-The repository includes a GitHub Actions workflow (`.github/workflows/deploy-pages.yml`) that:
-- Builds the TypeScript code
-- Synchronizes the freshly built `src/` application into `docs/`
-- Deploys the generated `docs/` directory to GitHub Pages
-
-The workflow runs automatically on:
-- Every push to the `main` branch
-- Manual trigger via the "Actions" tab → "Deploy to GitHub Pages" → "Run workflow"
-
-### 3. Local Deployment Testing
-
-To test the deployment locally:
-
-```bash
-# Build and synchronize the same files used by GitHub Pages
-npm run deploy:local
-
-# Then serve from docs
-python -m http.server 8000 --directory docs
-```
-
----
-
-## Project Structure
+It runs entirely in the browser. There is no server and no runtime
+dependency. The application is online at
+https://AI-VTRC.github.io/ACWAverse/. To run it from source:
 
 ```
-ACWAverse/
-├── src/                    # Source files
-│   ├── index.html         # Main HTML interface
-│   ├── style.css          # Stylesheet
-│   ├── acwa.js            # UI logic and visualization
-│   ├── acwa-logic.js      # Simulation orchestration
-│   ├── acwa-engine.ts     # Core simulation engine (TypeScript)
-│   ├── data/              # Network data files
-│   │   ├── manifest.json  # Available networks
-│   │   └── *.json         # Network configurations
-│   ├── dist/              # Compiled TypeScript output
-│   └── tests/             # Test suite
-├── paper/                 # Research paper and figures
-│   ├── main.tex          # LaTeX source
-│   ├── main.pdf          # Compiled paper
-│   └── images/           # Paper figures
-├── docs/                  # Generated GitHub Pages application
-├── .github/workflows/     # GitHub Actions workflows
-└── package.json          # Node.js dependencies and scripts
+npm install
+npm test          # compile the engine and run the 105 tests
+npm run build     # build the web application into site/
+npm run serve     # http://localhost:8080
 ```
 
----
+`site/acwaverse.html` is the whole application in one file; it can be opened
+straight from disk.
 
-## Key Innovations
+## The model
 
-- **Integrated Cyber-Attack Simulation Framework**: Duration-based effects with real-time data poisoning that affects both conditional actions and system visualization
-- **Advanced Layout Algorithms**: Topological sorting, balanced positioning, and compact layouts for optimal network representation
-- **Real-Time Data Poisoning with Visual Feedback**: Injects false sensor readings for specified durations, affecting both conditional action evaluation and graph visualization
-- **Comprehensive Sample Systems**: Pre-configured systems ranging from simple loops to complex real-world topologies like the Muleshoe Water System
-- **Web-Based Accessibility**: Runs entirely in modern browsers, providing cross-platform compatibility without installation requirements
+A water system is described the way hydraulic engineers draw it.
 
----
+**Nodes** are places where water is: a *junction* (a pipe joint, optionally
+with a consumer demand), a *tank* (storage with a free surface) and a
+*reservoir* (a source or sink of fixed head).
 
-## Case Studies
+**Links** join two nodes and carry flow: a *pipe*, a *pump* and a *valve*.
+Every link has a first node (`from`) and a second (`to`).
 
-### 4-Tank Conditional Loop
-Demonstrates integrated cyber-attack framework and conditional control logic with data poisoning attacks targeting tank level sensors.
+- For a pipe this only fixes the sign of its flow.
+- For a pump it is physical. `from` is the suction side and `to` is the
+  discharge side. The pump adds head in that direction only, and its check
+  valve stops water coming back when it is off. On the diagram the arrow in
+  the pump symbol points from suction to discharge, the inspector says "draws
+  from A, delivers to B", and one button turns the pump around.
+- For a valve `from` is the inlet.
 
-### ACWA Topologies Network
-Showcases ability to handle complex network topologies with multiple attack scenarios including data poisoning, chemical interference, and physical damage.
+The **control system** is a separate layer, named as in the ACWAverse paper.
+A *sensor* measures one quantity on one element, with optional noise.
+*Control actions* command an actuator (a pump speed or a valve setting):
 
-### Muleshoe Water System
-Real-world topology demonstrating ACWAverse's capability to model municipal water distribution networks with realistic flow rates, tank capacities, and operational parameters.
+| Kind | `type` | What it does |
+|---|---|---|
+| Timed control action | `timed` | Commands a setting at given times, optionally repeating. |
+| Conditional action | `conditional` | While a sensor reading meets a condition, commands a setting. |
+| On/off control | `onoff` | A pair of conditional actions with a dead band: on below one level, off above another. |
+| PID loop | `pid` | Holds a reading at a setpoint by adjusting the actuator. |
 
----
+Control actions see only what sensors report, never the true state. The last
+two kinds are additions; the paper describes the first two.
 
-## Performance
+**Cyber-physical attacks** fall into the paper's three families and are placed
+on what they act on:
 
-Performance evaluations demonstrate efficient browser-based simulation capabilities:
-- Complex networks (50+ nodes, 70+ pipes): 24-hour simulations complete within seconds
-- Memory utilization: 100-component network uses under 100MB of browser memory
-- Scalability: Networks with over 500 components demonstrate practical performance
-- Accuracy: Hydraulic calculations deviate less than 2% from theoretical expectations
-- Water quality modeling: Typically within 5% of analytical solutions
+| Family | Attack (`type`) | Acts on |
+|---|---|---|
+| Data poisoning | data poisoning (`data_poisoning`): constant, offset, scale, freeze, drift, noise, replay | a sensor |
+| Data poisoning | command injection (`command_injection`) | an actuator |
+| Data poisoning | control action tampering (`controller_tamper`): disabled, or settings changed | a control action |
+| Physical damage | pump failure (`pump_failure`) | a pump |
+| Physical damage | valve stuck (`valve_stuck`) | a valve |
+| Physical damage | leak (`leak`): an orifice of a given size | a junction or tank |
+| Physical damage | pipe blockage (`pipe_blockage`) | a pipe |
+| Chemical interference | chemical interference (`chemical_interference`): chlorine, dechlorinating agent, oxygen scavenger, acid, base, ammonia, organic matter, nitrate, tracer | a junction or tank |
 
----
+Command injection and control action tampering are additions. They falsify
+data inside the control system, so they are counted with data poisoning.
+
+Data poisoning changes what the conditional actions do and what an operator
+would see, while the plant carries on according to the physics. Results keep
+both: the reported value and the true one. Every attack has a start time and
+a duration, and is active from its start up to, but not including, its end.
+
+## What is computed
+
+**Hydraulics.** Heads and flows come from the Global Gradient Algorithm, the
+method used by EPANET, with tank storage solved implicitly so that directly
+connected tanks stay stable at any time step.
+
+- Pipes: Hazen-Williams or Darcy-Weisbach (Swamee-Jain friction factor), minor
+  losses, optional check valve.
+- Pumps: centrifugal head curve `h = a0·ω² + a1·ω·q + a2·q²` with the affinity
+  laws for speed, shaft power and efficiency around a best-efficiency point,
+  ramp time, and a net-positive-suction-head check that flags cavitation.
+- Valves: gate, globe, butterfly, ball and linear characteristics as a loss
+  coefficient against opening, a stroke time, and a flow-limiting mode.
+- Tanks: cylinder, box or sphere, with overflow or a float valve when full.
+- Demands are pressure-driven (Wagner): consumers get less when pressure is
+  short, and nothing below the minimum pressure.
+- Leaks follow the orifice law; a blockage is a sudden contraction and
+  expansion.
+
+**Water quality.** Plug flow along pipes (Lagrangian segments), complete
+mixing at junctions and in tanks. Tracked: temperature, free chlorine (bulk and
+wall decay), alkalinity and inorganic carbon with pH from carbonate
+equilibrium, dissolved oxygen, biochemical oxygen demand, ammonia and nitrate
+(nitrification), a conservative tracer, and water age. Tanks exchange gases
+and heat with the air.
+
+**Checks.** `npm test` runs 105 tests. Six reference networks are compared
+with EPANET 2.2 (through WNTR): flows agree within 0.2 %, heads within 0.1 %,
+tank levels within 0.4 % and chlorine within 1.5 %. `tools/epanet_reference.py`
+regenerates the reference values. Other tests check closed-form results
+(Torricelli drain, pump operating points, affinity laws, mixing, mass
+balance), every control action and attack type, the labelling of rows, and that
+all seven example scenarios validate, run and balance.
+
+Each run reports a water balance (supplied, delivered, leaked, spilled,
+stored). The error is the volume the books fail to close by; in the examples
+it is below a millionth of the volume moved.
+
+## Results and datasets
+
+A run produces a table with one row per report step. Columns are either the
+sensor readings (what the control system sees, attacks included) or
+everything, including the true state of every element. The last three columns
+label each row: `attack` (0 or 1), `attack_class` (`data_poisoning`, `physical_damage`, `chemical_interference`)
+and `attack_ids`. Values are SI: m, m³/s, m³, s, mg/L, kW.
+
+The dataset generator runs a scenario many times, with and without its
+attacks. Each run starts from slightly different tank levels and demands, and
+each attack moves in time and changes in strength. The result is one CSV with
+a `run` column, reproducible from its seed.
+
+From code:
+
+```js
+import { simulate, generateDataset, toCSV } from './build/engine/index.js';
+
+const results = simulate(scenario);
+results.series['TOWER.level'];     // true value, one per row
+results.series['LT1.reading'];     // what the sensor reported
+results.labels.any;                // 1 where an attack is in progress
+
+const dataset = generateDataset(scenario, { attackRuns: 20, normalRuns: 5, seed: 7 });
+const csv = toCSV(dataset);
+```
+
+## Scenario files
+
+A scenario is one JSON file (`"format": "acwaverse/2"`):
+
+```json
+{
+  "format": "acwaverse/2",
+  "name": "Pump, tower and town",
+  "nodes": [
+    { "id": "WELL", "type": "reservoir", "head": 8 },
+    { "id": "J1", "type": "junction", "elevation": 0 },
+    { "id": "TOWER", "type": "tank", "elevation": 35, "diameter": 10, "height": 8, "level": 4.5 },
+    { "id": "TOWN", "type": "junction", "elevation": 5, "demand": 0.02 }
+  ],
+  "links": [
+    { "id": "PU1", "type": "pump", "from": "WELL", "to": "J1", "shutoffHead": 60, "maxFlow": 0.05 },
+    { "id": "P1", "type": "pipe", "from": "J1", "to": "TOWER", "length": 1000, "diameter": 0.25 },
+    { "id": "P2", "type": "pipe", "from": "TOWER", "to": "TOWN", "length": 600, "diameter": 0.25 }
+  ],
+  "sensors": [{ "id": "LT1", "element": "TOWER", "quantity": "level", "noise": 0.01 }],
+  "controllers": [{ "id": "C1", "type": "onoff", "sensor": "LT1", "actuator": "PU1", "action": "fill", "low": 3, "high": 6.5 }],
+  "attacks": [{ "id": "A1", "type": "data_poisoning", "sensor": "LT1", "mode": "constant", "value": 3, "start": 14400, "duration": 7200 }],
+  "simulation": { "duration": 86400, "timeStep": 30, "reportStep": 300 }
+}
+```
+
+Every field, with its unit and default, is documented in
+`engine/src/scenario.ts`. `validateScenario` reports problems in plain words
+before anything runs.
+
+## Examples
+
+| File | What it shows |
+|---|---|
+| `muleshoe.json` | A small-town groundwater system: wells, two ground tanks, three boosters, a tower and a town. A data poisoning attack makes the tower level read low and the tower overflows, as in the January 2024 incident in Muleshoe, Texas. Dimensions are representative, not surveyed. |
+| `pumped-tower.json` | The smallest complete supply: one pump, one tower, one town. |
+| `four-tank-timed.json` | Four tanks in a ring under timed control actions. No attacks. |
+| `four-tank-conditional.json` | The same ring under conditional actions, with four attacks. |
+| `acwa-line.json`, `acwa-bus.json`, `acwa-star.json` | The ACWA laboratory testbed in its three layouts, each with data poisoning, physical damage and chemical interference. |
+
+## Architecture
+
+The four layers of the paper, and where each lives:
+
+| Layer | Where | What |
+|---|---|---|
+| Front-end interface | `app/ui` | State, tools, inspector, and the control, attack, run and data panels. |
+| Simulation engine | `engine/src` | TypeScript, no dependencies. Hydraulic simulation module (`network`, `elements`, `solver`), water quality module (`quality`), cyber-attack simulation module (`control`, `attacks`), and `scenario`, `simulation`, `dataset`. |
+| Visualization engine | `app/viz` | The live diagram and the charts, drawn in SVG. |
+| Data management | `app/data` | Scenario files, examples, editing operations, table and dataset export. |
+
+## Limits
+
+- Hydraulics are quasi-steady: there is no water hammer or other pressure
+  transient.
+- Pipes run full; there is no open-channel or partly full flow.
+- A closed valve, a stopped pump and a seated check valve are modelled as a
+  very large resistance, so a few millilitres per second can pass under a high
+  head.
+- Tanks are completely mixed.
+- Reaction rates are first-order with a temperature correction; they are
+  defaults to be calibrated, not measurements of any particular water.
+- The control system is idealised: there is no network delay, packet loss or
+  protocol model. Attacks act on values, not on packets.
+
+## Deployment
+
+`.github/workflows/deploy-pages.yml` publishes the application to GitHub
+Pages. On every push to `main`, and when it is started by hand from the
+Actions tab, it installs the dependencies, runs the tests, builds `site/` and
+deploys that folder. In the repository settings, Pages must have GitHub
+Actions as its source.
 
 ## Citation
 
@@ -220,8 +232,6 @@ If you use ACWAverse in your research, please cite:
 }
 ```
 
----
-
 ## Related Work
 
 This work builds upon and extends the original ACWA project:
@@ -230,8 +240,6 @@ This work builds upon and extends the original ACWA project:
 
 For more information about the ACWA physical testbed and related research, visit:
 - [ACWA Data and Paper](https://ai.bse.vt.edu/ACWA_Lab.html)
-
----
 
 ## Research Labs
 
@@ -244,8 +252,6 @@ Virginia Tech Research Center (VTRC) 3rd floor
 [ACWA Lab Homepage](https://ai.bse.vt.edu/ACWA_Lab.html)  
 1230 Washington St SW, Blacksburg, VA 24061
 
----
-
 ## Authors
 
 - **Mehmet Oguz Yardimci** - Department of Computer Science, Virginia Tech  
@@ -255,12 +261,9 @@ Virginia Tech Research Center (VTRC) 3rd floor
 - **Feras A. Batarseh** - Department of Biological Systems Engineering, Virginia Tech  
   - Email: batarseh@vt.edu
 
-
 ## Acknowledgments
 
 This work leverages the facilities of the ACWA Laboratory at Virginia Tech, including its instrumented physical testbed, PLC infrastructure, and curated datasets, which informed ACWAverse's requirements and provided ground truth for validation.
-
----
 
 ## Contact
 
