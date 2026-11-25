@@ -1,14 +1,16 @@
 {
   "name": "acwaverse",
-  "version": "0.1.0",
+  "version": "2.0.0",
+  "description": "Simulator of water systems as cyber-physical systems: hydraulics, water quality, control and attacks.",
+  "type": "module",
   "private": true,
   "scripts": {
-    "build": "tsc && node scripts/sync-docs.js",
-    "build:watch": "tsc --watch",
-    "test": "npm run build && node src/tests/run-node-tests.js",
-    "deploy:local": "npm run build"
+    "build": "node tools/build.mjs",
+    "test": "node tools/build.mjs --engine-only && node --test --test-reporter=spec \"tests/*.test.mjs\"",
+    "serve": "node tools/serve.mjs"
   },
   "devDependencies": {
-    "typescript": "^5.4.0"
+    "esbuild": "^0.25.0",
+    "typescript": "^5.6.0"
   }
 }

@@ -1,0 +1,137 @@
+[
+  {
+    "name": "looped_network_steady",
+    "description": "Reservoir feeding a two-loop grid with three demands and a floating tank.",
+    "compare": { "flows": ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"], "heads": ["J1", "J2", "J3", "J4", "J5"] },
+    "scenario": {
+      "name": "Looped network",
+      "nodes": [
+        { "id": "R", "type": "reservoir", "head": 60 },
+        { "id": "J1", "type": "junction", "elevation": 10 },
+        { "id": "J2", "type": "junction", "elevation": 12, "demand": 0.005, "requiredPressure": 1 },
+        { "id": "J3", "type": "junction", "elevation": 8, "demand": 0.008, "requiredPressure": 1 },
+        { "id": "J4", "type": "junction", "elevation": 9, "demand": 0.006, "requiredPressure": 1 },
+        { "id": "J5", "type": "junction", "elevation": 11 },
+        { "id": "T", "type": "tank", "elevation": 40, "diameter": 10, "height": 8, "level": 3 }
+      ],
+      "links": [
+        { "id": "P1", "type": "pipe", "from": "R", "to": "J1", "length": 800, "diameter": 0.25, "roughness": 120 },
+        { "id": "P2", "type": "pipe", "from": "J1", "to": "J2", "length": 400, "diameter": 0.15, "roughness": 110 },
+        { "id": "P3", "type": "pipe", "from": "J2", "to": "J3", "length": 350, "diameter": 0.15, "roughness": 110 },
+        { "id": "P4", "type": "pipe", "from": "J1", "to": "J4", "length": 450, "diameter": 0.2, "roughness": 120 },
+        { "id": "P5", "type": "pipe", "from": "J4", "to": "J3", "length": 300, "diameter": 0.1, "roughness": 100 },
+        { "id": "P6", "type": "pipe", "from": "J4", "to": "J5", "length": 500, "diameter": 0.15, "roughness": 120 },
+        { "id": "P7", "type": "pipe", "from": "J5", "to": "J3", "length": 420, "diameter": 0.1, "roughness": 100, "minorLoss": 3 },
+        { "id": "P8", "type": "pipe", "from": "J5", "to": "T", "length": 250, "diameter": 0.2, "roughness": 130 }
+      ],
+      "simulation": { "duration": 0, "timeStep": 60 }
+    }
+  },
+  {
+    "name": "pumped_tank_eps",
+    "description": "Reservoir, centrifugal pump, elevated tank and a demand with a diurnal pattern over 12 h.",
+    "compare": { "flows": ["PU", "P3", "P4"], "heads": ["J1", "D"], "levels": ["T"] },
+    "scenario": {
+      "name": "Pumped tank",
+      "nodes": [
+        { "id": "R", "type": "reservoir", "head": 5 },
+        { "id": "S", "type": "junction", "elevation": 0 },
+        { "id": "DS", "type": "junction", "elevation": 0 },
+        { "id": "J1", "type": "junction", "elevation": 5 },
+        { "id": "T", "type": "tank", "elevation": 25, "diameter": 8, "height": 8, "level": 1.5, "whenFull": "closeInlet" },
+        { "id": "D", "type": "junction", "elevation": 2, "demand": 0.012, "requiredPressure": 1, "pattern": [0.6, 0.8, 1.4, 1.6, 1.0, 0.7], "patternStep": 7200 }
+      ],
+      "links": [
+        { "id": "P1", "type": "pipe", "from": "R", "to": "S", "length": 20, "diameter": 0.25, "roughness": 130 },
+        { "id": "PU", "type": "pump", "from": "S", "to": "DS", "shutoffHead": 45, "maxFlow": 0.06, "rampTime": 0 },
+        { "id": "P2", "type": "pipe", "from": "DS", "to": "J1", "length": 30, "diameter": 0.2, "roughness": 130 },
+        { "id": "P3", "type": "pipe", "from": "J1", "to": "T", "length": 600, "diameter": 0.2, "roughness": 120 },
+        { "id": "P4", "type": "pipe", "from": "J1", "to": "D", "length": 900, "diameter": 0.15, "roughness": 110 }
+      ],
+      "simulation": { "duration": 43200, "timeStep": 60, "reportStep": 1800 }
+    }
+  },
+  {
+    "name": "throttle_valve_steady",
+    "description": "Gravity flow between two tanks through a half-open control valve.",
+    "compare": { "flows": ["P1", "V"], "heads": [] },
+    "scenario": {
+      "name": "Throttled valve",
+      "nodes": [
+        { "id": "A", "type": "tank", "elevation": 10, "diameter": 8, "height": 10, "level": 8 },
+        { "id": "VI", "type": "junction", "elevation": 0 },
+        { "id": "VO", "type": "junction", "elevation": 0 },
+        { "id": "B", "type": "tank", "elevation": 0, "diameter": 8, "height": 10, "level": 2 }
+      ],
+      "links": [
+        { "id": "P1", "type": "pipe", "from": "A", "to": "VI", "length": 200, "diameter": 0.15, "roughness": 125 },
+        { "id": "V", "type": "valve", "from": "VI", "to": "VO", "kind": "linear", "fullOpenK": 4, "setting": 0.5, "diameter": 0.15, "strokeTime": 0 },
+        { "id": "P2", "type": "pipe", "from": "VO", "to": "B", "length": 300, "diameter": 0.15, "roughness": 125 }
+      ],
+      "simulation": { "duration": 0, "timeStep": 60 }
+    }
+  },
+  {
+    "name": "darcy_weisbach_steady",
+    "description": "Series and parallel pipes with Darcy-Weisbach friction.",
+    "compare": { "flows": ["P1", "P2", "P3", "P4"], "heads": ["J1", "J2"] },
+    "scenario": {
+      "name": "Darcy-Weisbach",
+      "nodes": [
+        { "id": "R", "type": "reservoir", "head": 40 },
+        { "id": "J1", "type": "junction", "elevation": 5 },
+        { "id": "J2", "type": "junction", "elevation": 3, "demand": 0.02, "requiredPressure": 1 },
+        { "id": "T", "type": "tank", "elevation": 20, "diameter": 8, "height": 10, "level": 2 }
+      ],
+      "links": [
+        { "id": "P1", "type": "pipe", "from": "R", "to": "J1", "length": 500, "diameter": 0.2, "friction": "darcy-weisbach", "roughness": 0.26 },
+        { "id": "P2", "type": "pipe", "from": "J1", "to": "J2", "length": 300, "diameter": 0.15, "friction": "darcy-weisbach", "roughness": 0.05 },
+        { "id": "P3", "type": "pipe", "from": "J1", "to": "J2", "length": 350, "diameter": 0.1, "friction": "darcy-weisbach", "roughness": 1.5 },
+        { "id": "P4", "type": "pipe", "from": "J2", "to": "T", "length": 400, "diameter": 0.15, "friction": "darcy-weisbach", "roughness": 0.26 }
+      ],
+      "simulation": { "duration": 0, "timeStep": 60 }
+    }
+  },
+  {
+    "name": "pressure_driven_demand",
+    "description": "Demands exceed what a low reservoir can deliver at the required pressure.",
+    "pda": true,
+    "compare": { "flows": ["P1", "P2"], "heads": ["J1", "J2"] },
+    "scenario": {
+      "name": "Pressure deficit",
+      "nodes": [
+        { "id": "R", "type": "reservoir", "head": 25 },
+        { "id": "J1", "type": "junction", "elevation": 5, "demand": 0.02, "minPressure": 0, "requiredPressure": 20 },
+        { "id": "J2", "type": "junction", "elevation": 12, "demand": 0.015, "minPressure": 0, "requiredPressure": 20 }
+      ],
+      "links": [
+        { "id": "P1", "type": "pipe", "from": "R", "to": "J1", "length": 1000, "diameter": 0.15, "roughness": 110 },
+        { "id": "P2", "type": "pipe", "from": "J1", "to": "J2", "length": 800, "diameter": 0.1, "roughness": 100 }
+      ],
+      "simulation": { "duration": 0, "timeStep": 60 }
+    }
+  },
+  {
+    "name": "chlorine_transport",
+    "description": "Chlorinated source water displaces unchlorinated water; first-order bulk decay.",
+    "compare": { "flows": ["P1", "P3"], "heads": [], "levels": ["T"], "chlorine": ["J1", "J2", "J3", "T"] },
+    "scenario": {
+      "name": "Chlorine transport",
+      "chemistry": { "chlorineBulkDecay": 2.0 },
+      "nodes": [
+        { "id": "R", "type": "reservoir", "head": 50, "quality": { "chlorine": 1.2 } },
+        { "id": "J1", "type": "junction", "elevation": 5, "quality": { "chlorine": 0 } },
+        { "id": "T", "type": "tank", "elevation": 30, "diameter": 6, "height": 8, "level": 3, "whenFull": "closeInlet", "quality": { "chlorine": 0.2 } },
+        { "id": "J2", "type": "junction", "elevation": 4, "demand": 0.01, "requiredPressure": 1, "quality": { "chlorine": 0 } },
+        { "id": "J3", "type": "junction", "elevation": 3, "demand": 0.006, "requiredPressure": 1, "quality": { "chlorine": 0 } }
+      ],
+      "links": [
+        { "id": "P1", "type": "pipe", "from": "R", "to": "J1", "length": 1500, "diameter": 0.25, "roughness": 120 },
+        { "id": "P2", "type": "pipe", "from": "J1", "to": "T", "length": 300, "diameter": 0.2, "roughness": 120 },
+        { "id": "P3", "type": "pipe", "from": "J1", "to": "J2", "length": 1200, "diameter": 0.15, "roughness": 110 },
+        { "id": "P4", "type": "pipe", "from": "J2", "to": "J3", "length": 900, "diameter": 0.1, "roughness": 100 }
+      ],
+      "simulation": { "duration": 28800, "timeStep": 60, "reportStep": 1800 }
+    }
+  }
+]

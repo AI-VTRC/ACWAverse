@@ -28,52 +28,25 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build TypeScript
+      - name: Run the tests
+        run: npm test
+
+      - name: Build the application
         run: npm run build
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
-      - name: Copy files to deployment directory
-        run: |
-          mkdir -p deploy
-          if [ ! -d "docs" ]; then
-            echo "ERROR: docs/ directory not found"
-            exit 1
-          fi
-          cp -r docs/* deploy/
-
-          touch deploy/.nojekyll
-
-          echo "=== Verifying deployment structure ==="
-          ls -la deploy/
-          echo ""
-          echo "=== Verifying index.html is at root ==="
-          if [ -f "deploy/index.html" ]; then
-            ls -lh deploy/index.html
-            echo "index.html found at deploy/index.html (will be root on GitHub Pages)"
-          else
-            echo "ERROR: index.html NOT found in deploy/"
-            exit 1
-          fi
-
-          echo ""
-          echo "=== Key files in deployment ==="
-          ls -1 deploy/*.{html,css,js} 2>/dev/null || echo "No matching files"
-          echo ""
-          echo "=== Directory structure ==="
-          find deploy -type f -name "*.html" -o -name "*.js" -o -name "*.css" | head -10
-
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "./deploy"
+          path: "./site"
 
       - name: Deploy to GitHub Pages
         id: deployment
