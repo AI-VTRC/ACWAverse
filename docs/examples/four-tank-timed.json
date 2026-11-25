@@ -1,0 +1,458 @@
+{
+  "format": "acwaverse/2",
+  "name": "Four-tank loop, timed control",
+  "description": "Four tanks in a ring, each pumped into the next. The pumps follow timed control actions: pumps 1 and 3 run for 200 s, then pumps 2 and 4, and so on. Conditional actions stop a pump if the tank it fills is nearly full or the tank it draws from is nearly empty. No attacks: a baseline to compare against.",
+  "nodes": [
+    {
+      "id": "T1",
+      "type": "tank",
+      "x": 220,
+      "y": 160,
+      "elevation": 0,
+      "shape": "cylinder",
+      "diameter": 1.2,
+      "height": 2,
+      "level": 1.8,
+      "whenFull": "spill",
+      "label": "Tank 1"
+    },
+    {
+      "id": "J1",
+      "type": "junction",
+      "x": 540,
+      "y": 160,
+      "elevation": 0
+    },
+    {
+      "id": "T2",
+      "type": "tank",
+      "x": 700,
+      "y": 160,
+      "elevation": 0,
+      "shape": "cylinder",
+      "diameter": 1.2,
+      "height": 2,
+      "level": 0.2,
+      "whenFull": "spill",
+      "label": "Tank 2"
+    },
+    {
+      "id": "J2",
+      "type": "junction",
+      "x": 700,
+      "y": 400,
+      "elevation": 0
+    },
+    {
+      "id": "T3",
+      "type": "tank",
+      "x": 700,
+      "y": 520,
+      "elevation": 0,
+      "shape": "cylinder",
+      "diameter": 1.2,
+      "height": 2,
+      "level": 1.8,
+      "whenFull": "spill",
+      "label": "Tank 3"
+    },
+    {
+      "id": "J3",
+      "type": "junction",
+      "x": 380,
+      "y": 520,
+      "elevation": 0
+    },
+    {
+      "id": "T4",
+      "type": "tank",
+      "x": 220,
+      "y": 520,
+      "elevation": 0,
+      "shape": "cylinder",
+      "diameter": 1.2,
+      "height": 2,
+      "level": 0.2,
+      "whenFull": "spill",
+      "label": "Tank 4"
+    },
+    {
+      "id": "J4",
+      "type": "junction",
+      "x": 220,
+      "y": 280,
+      "elevation": 0
+    }
+  ],
+  "links": [
+    {
+      "id": "PU1",
+      "type": "pump",
+      "from": "T1",
+      "to": "J1",
+      "shutoffHead": 12,
+      "maxFlow": 0.006,
+      "speed": 0,
+      "efficiency": 0.6,
+      "rampTime": 2,
+      "label": "Pump 1"
+    },
+    {
+      "id": "P1",
+      "type": "pipe",
+      "from": "J1",
+      "to": "T2",
+      "length": 3,
+      "diameter": 0.05,
+      "friction": "hazen-williams",
+      "roughness": 130
+    },
+    {
+      "id": "PU2",
+      "type": "pump",
+      "from": "T2",
+      "to": "J2",
+      "shutoffHead": 12,
+      "maxFlow": 0.006,
+      "speed": 0,
+      "efficiency": 0.6,
+      "rampTime": 2,
+      "label": "Pump 2"
+    },
+    {
+      "id": "P2",
+      "type": "pipe",
+      "from": "J2",
+      "to": "T3",
+      "length": 3,
+      "diameter": 0.05,
+      "friction": "hazen-williams",
+      "roughness": 130
+    },
+    {
+      "id": "PU3",
+      "type": "pump",
+      "from": "T3",
+      "to": "J3",
+      "shutoffHead": 12,
+      "maxFlow": 0.006,
+      "speed": 0,
+      "efficiency": 0.6,
+      "rampTime": 2,
+      "label": "Pump 3"
+    },
+    {
+      "id": "P3",
+      "type": "pipe",
+      "from": "J3",
+      "to": "T4",
+      "length": 3,
+      "diameter": 0.05,
+      "friction": "hazen-williams",
+      "roughness": 130
+    },
+    {
+      "id": "PU4",
+      "type": "pump",
+      "from": "T4",
+      "to": "J4",
+      "shutoffHead": 12,
+      "maxFlow": 0.006,
+      "speed": 0,
+      "efficiency": 0.6,
+      "rampTime": 2,
+      "label": "Pump 4"
+    },
+    {
+      "id": "P4",
+      "type": "pipe",
+      "from": "J4",
+      "to": "T1",
+      "length": 3,
+      "diameter": 0.05,
+      "friction": "hazen-williams",
+      "roughness": 130
+    }
+  ],
+  "sensors": [
+    {
+      "id": "LT1",
+      "element": "T1",
+      "quantity": "level",
+      "label": "Tank 1 level",
+      "noise": 0.002
+    },
+    {
+      "id": "LT2",
+      "element": "T2",
+      "quantity": "level",
+      "label": "Tank 2 level",
+      "noise": 0.002
+    },
+    {
+      "id": "LT3",
+      "element": "T3",
+      "quantity": "level",
+      "label": "Tank 3 level",
+      "noise": 0.002
+    },
+    {
+      "id": "LT4",
+      "element": "T4",
+      "quantity": "level",
+      "label": "Tank 4 level",
+      "noise": 0.002
+    },
+    {
+      "id": "FT1",
+      "element": "PU1",
+      "quantity": "flow",
+      "label": "Pump 1 flow",
+      "noise": 0.00002
+    },
+    {
+      "id": "FT2",
+      "element": "PU2",
+      "quantity": "flow",
+      "label": "Pump 2 flow",
+      "noise": 0.00002
+    },
+    {
+      "id": "FT3",
+      "element": "PU3",
+      "quantity": "flow",
+      "label": "Pump 3 flow",
+      "noise": 0.00002
+    },
+    {
+      "id": "FT4",
+      "element": "PU4",
+      "quantity": "flow",
+      "label": "Pump 4 flow",
+      "noise": 0.00002
+    },
+    {
+      "id": "AT1",
+      "element": "T1",
+      "quantity": "ph",
+      "label": "Tank 1 pH",
+      "noise": 0.01
+    },
+    {
+      "id": "AT2",
+      "element": "T2",
+      "quantity": "bod",
+      "label": "Tank 2 BOD",
+      "noise": 0.02
+    }
+  ],
+  "controllers": [
+    {
+      "id": "C1",
+      "type": "timed",
+      "actuator": "PU1",
+      "events": [
+        {
+          "time": 0,
+          "value": 1
+        },
+        {
+          "time": 200,
+          "value": 0
+        },
+        {
+          "time": 400,
+          "value": 1
+        },
+        {
+          "time": 600,
+          "value": 0
+        },
+        {
+          "time": 800,
+          "value": 1
+        }
+      ],
+      "label": "Pump 1 timed actions"
+    },
+    {
+      "id": "C2",
+      "type": "conditional",
+      "sensor": "LT2",
+      "operator": ">",
+      "threshold": 1.9,
+      "actuator": "PU1",
+      "value": 0,
+      "label": "Tank 2 nearly full stops pump 1"
+    },
+    {
+      "id": "C3",
+      "type": "conditional",
+      "sensor": "LT1",
+      "operator": "<",
+      "threshold": 0.1,
+      "actuator": "PU1",
+      "value": 0,
+      "label": "Tank 1 nearly empty stops pump 1"
+    },
+    {
+      "id": "C4",
+      "type": "timed",
+      "actuator": "PU2",
+      "events": [
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 200,
+          "value": 1
+        },
+        {
+          "time": 400,
+          "value": 0
+        },
+        {
+          "time": 600,
+          "value": 1
+        },
+        {
+          "time": 800,
+          "value": 0
+        }
+      ],
+      "label": "Pump 2 timed actions"
+    },
+    {
+      "id": "C5",
+      "type": "conditional",
+      "sensor": "LT3",
+      "operator": ">",
+      "threshold": 1.9,
+      "actuator": "PU2",
+      "value": 0,
+      "label": "Tank 3 nearly full stops pump 2"
+    },
+    {
+      "id": "C6",
+      "type": "conditional",
+      "sensor": "LT2",
+      "operator": "<",
+      "threshold": 0.1,
+      "actuator": "PU2",
+      "value": 0,
+      "label": "Tank 2 nearly empty stops pump 2"
+    },
+    {
+      "id": "C7",
+      "type": "timed",
+      "actuator": "PU3",
+      "events": [
+        {
+          "time": 0,
+          "value": 1
+        },
+        {
+          "time": 200,
+          "value": 0
+        },
+        {
+          "time": 400,
+          "value": 1
+        },
+        {
+          "time": 600,
+          "value": 0
+        },
+        {
+          "time": 800,
+          "value": 1
+        }
+      ],
+      "label": "Pump 3 timed actions"
+    },
+    {
+      "id": "C8",
+      "type": "conditional",
+      "sensor": "LT4",
+      "operator": ">",
+      "threshold": 1.9,
+      "actuator": "PU3",
+      "value": 0,
+      "label": "Tank 4 nearly full stops pump 3"
+    },
+    {
+      "id": "C9",
+      "type": "conditional",
+      "sensor": "LT3",
+      "operator": "<",
+      "threshold": 0.1,
+      "actuator": "PU3",
+      "value": 0,
+      "label": "Tank 3 nearly empty stops pump 3"
+    },
+    {
+      "id": "C10",
+      "type": "timed",
+      "actuator": "PU4",
+      "events": [
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 200,
+          "value": 1
+        },
+        {
+          "time": 400,
+          "value": 0
+        },
+        {
+          "time": 600,
+          "value": 1
+        },
+        {
+          "time": 800,
+          "value": 0
+        }
+      ],
+      "label": "Pump 4 timed actions"
+    },
+    {
+      "id": "C11",
+      "type": "conditional",
+      "sensor": "LT1",
+      "operator": ">",
+      "threshold": 1.9,
+      "actuator": "PU4",
+      "value": 0,
+      "label": "Tank 1 nearly full stops pump 4"
+    },
+    {
+      "id": "C12",
+      "type": "conditional",
+      "sensor": "LT4",
+      "operator": "<",
+      "threshold": 0.1,
+      "actuator": "PU4",
+      "value": 0,
+      "label": "Tank 4 nearly empty stops pump 4"
+    }
+  ],
+  "attacks": [],
+  "simulation": {
+    "duration": 900,
+    "timeStep": 1,
+    "reportStep": 5,
+    "ambientTemperature": 20,
+    "seed": 1
+  },
+  "quality": {
+    "temperature": 20,
+    "chlorine": 0.5,
+    "ph": 7.5,
+    "alkalinity": 100
+  },
+  "chemistry": {}
+}

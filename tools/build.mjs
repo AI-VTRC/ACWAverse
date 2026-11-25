@@ -1,6 +1,6 @@
 // Build script.
 //   node tools/build.mjs --engine-only   compile the engine to build/engine (used by the tests)
-//   node tools/build.mjs                 also build the web application into site/
+//   node tools/build.mjs                 also build the web application into docs/, the folder GitHub Pages serves
 import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -13,9 +13,11 @@ execFileSync(bin('tsc'), ['-p', root], { stdio: 'inherit' });
 if (process.argv.includes('--engine-only')) process.exit(0);
 
 const { build } = await import('esbuild');
-const site = join(root, 'site');
+const site = join(root, 'docs');
 rmSync(site, { recursive: true, force: true });
 mkdirSync(site, { recursive: true });
+// GitHub Pages publishes the folder as it is when this file is present.
+writeFileSync(join(site, '.nojekyll'), '');
 
 await build({
   entryPoints: [join(root, 'app', 'main.js')],
@@ -45,4 +47,4 @@ const single = html
   .replace('<script type="module" src="app.js"></script>', () =>
     `<script>window.ACWAVERSE_EXAMPLES = ${JSON.stringify(examples).replace(/</g, '\\u003c')};</script>\n<script type="module">\n${js}\n</script>`);
 writeFileSync(join(site, 'acwaverse.html'), single);
-console.log('Built site/ (index.html, app.js, styles.css, examples/, acwaverse.html)');
+console.log('Built docs/ (index.html, app.js, styles.css, examples/, acwaverse.html)');
