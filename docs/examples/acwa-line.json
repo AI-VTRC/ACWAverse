@@ -1,0 +1,422 @@
+{
+  "format": "acwaverse/2",
+  "name": "ACWA testbed, line layout",
+  "description": "The ACWA laboratory testbed arranged as a line: a feed tank and one pump supply four tanks along a single main. Timed control actions set the pump speed, and conditional actions slow, then stop, the pump as tank 1 fills. Data poisoning falsifies two level readings, physical damage jams the inlet valve and fails the pump, and chemical interference adds acid and an oxygen scavenger to two tanks.",
+  "nodes": [
+    {
+      "id": "SRC",
+      "type": "reservoir",
+      "x": 60,
+      "y": 200,
+      "head": 6,
+      "label": "Supply"
+    },
+    {
+      "id": "J0",
+      "type": "junction",
+      "x": 170,
+      "y": 200,
+      "elevation": 0
+    },
+    {
+      "id": "FEED",
+      "type": "tank",
+      "x": 310,
+      "y": 200,
+      "elevation": 0,
+      "shape": "box",
+      "width": 1,
+      "length": 1,
+      "height": 2,
+      "level": 1.5,
+      "whenFull": "spill",
+      "label": "Feed tank"
+    },
+    {
+      "id": "H1",
+      "type": "junction",
+      "x": 490,
+      "y": 200,
+      "elevation": 0
+    },
+    {
+      "id": "H2",
+      "type": "junction",
+      "x": 670,
+      "y": 200,
+      "elevation": 0
+    },
+    {
+      "id": "H3",
+      "type": "junction",
+      "x": 850,
+      "y": 200,
+      "elevation": 0
+    },
+    {
+      "id": "T1",
+      "type": "tank",
+      "x": 490,
+      "y": 420,
+      "elevation": 0,
+      "shape": "box",
+      "width": 1,
+      "length": 1,
+      "height": 2,
+      "level": 0.5,
+      "whenFull": "spill",
+      "label": "Tank 1"
+    },
+    {
+      "id": "T2",
+      "type": "tank",
+      "x": 670,
+      "y": 420,
+      "elevation": 0,
+      "shape": "box",
+      "width": 1,
+      "length": 1,
+      "height": 2,
+      "level": 0.5,
+      "whenFull": "spill",
+      "label": "Tank 2"
+    },
+    {
+      "id": "T3",
+      "type": "tank",
+      "x": 850,
+      "y": 420,
+      "elevation": 0,
+      "shape": "box",
+      "width": 1,
+      "length": 1,
+      "height": 2,
+      "level": 0.5,
+      "whenFull": "spill",
+      "label": "Tank 3"
+    },
+    {
+      "id": "T4",
+      "type": "tank",
+      "x": 1010,
+      "y": 200,
+      "elevation": 0,
+      "shape": "box",
+      "width": 1,
+      "length": 1,
+      "height": 2,
+      "level": 0.5,
+      "whenFull": "spill",
+      "label": "Tank 4"
+    }
+  ],
+  "links": [
+    {
+      "id": "P0",
+      "type": "pipe",
+      "from": "SRC",
+      "to": "J0",
+      "length": 3,
+      "diameter": 0.05,
+      "friction": "hazen-williams",
+      "roughness": 130
+    },
+    {
+      "id": "V0",
+      "type": "valve",
+      "from": "J0",
+      "to": "FEED",
+      "kind": "ball",
+      "diameter": 0.05,
+      "mode": "flow",
+      "setting": 0.004,
+      "strokeTime": 5,
+      "label": "Inlet valve"
+    },
+    {
+      "id": "PU1",
+      "type": "pump",
+      "from": "FEED",
+      "to": "H1",
+      "shutoffHead": 10,
+      "maxFlow": 0.006,
+      "speed": 0.6,
+      "efficiency": 0.6,
+      "rampTime": 2,
+      "label": "Feed pump"
+    },
+    {
+      "id": "P1",
+      "type": "pipe",
+      "from": "H1",
+      "to": "H2",
+      "length": 3,
+      "diameter": 0.05,
+      "friction": "hazen-williams",
+      "roughness": 130
+    },
+    {
+      "id": "P2",
+      "type": "pipe",
+      "from": "H2",
+      "to": "H3",
+      "length": 3,
+      "diameter": 0.05,
+      "friction": "hazen-williams",
+      "roughness": 130
+    },
+    {
+      "id": "P3",
+      "type": "pipe",
+      "from": "H1",
+      "to": "T1",
+      "length": 3,
+      "diameter": 0.05,
+      "friction": "hazen-williams",
+      "roughness": 130
+    },
+    {
+      "id": "P4",
+      "type": "pipe",
+      "from": "H2",
+      "to": "T2",
+      "length": 3,
+      "diameter": 0.05,
+      "friction": "hazen-williams",
+      "roughness": 130
+    },
+    {
+      "id": "P5",
+      "type": "pipe",
+      "from": "H3",
+      "to": "T3",
+      "length": 3,
+      "diameter": 0.05,
+      "friction": "hazen-williams",
+      "roughness": 130
+    },
+    {
+      "id": "P6",
+      "type": "pipe",
+      "from": "H3",
+      "to": "T4",
+      "length": 3,
+      "diameter": 0.05,
+      "friction": "hazen-williams",
+      "roughness": 130
+    }
+  ],
+  "sensors": [
+    {
+      "id": "LT0",
+      "element": "FEED",
+      "quantity": "level",
+      "label": "Feed tank level",
+      "noise": 0.002
+    },
+    {
+      "id": "FT0",
+      "element": "V0",
+      "quantity": "flow",
+      "label": "Inlet flow",
+      "noise": 0.00002
+    },
+    {
+      "id": "FT1",
+      "element": "PU1",
+      "quantity": "flow",
+      "label": "Pump flow",
+      "noise": 0.00002
+    },
+    {
+      "id": "PT1",
+      "element": "H1",
+      "quantity": "pressure",
+      "label": "Header pressure",
+      "noise": 0.02
+    },
+    {
+      "id": "LT1",
+      "element": "T1",
+      "quantity": "level",
+      "label": "Tank 1 level",
+      "noise": 0.002
+    },
+    {
+      "id": "LT2",
+      "element": "T2",
+      "quantity": "level",
+      "label": "Tank 2 level",
+      "noise": 0.002
+    },
+    {
+      "id": "LT3",
+      "element": "T3",
+      "quantity": "level",
+      "label": "Tank 3 level",
+      "noise": 0.002
+    },
+    {
+      "id": "LT4",
+      "element": "T4",
+      "quantity": "level",
+      "label": "Tank 4 level",
+      "noise": 0.002
+    },
+    {
+      "id": "AT1",
+      "element": "T3",
+      "quantity": "ph",
+      "label": "Tank 3 pH",
+      "noise": 0.01
+    },
+    {
+      "id": "AT2",
+      "element": "T2",
+      "quantity": "oxygen",
+      "label": "Tank 2 dissolved oxygen",
+      "noise": 0.02
+    }
+  ],
+  "controllers": [
+    {
+      "id": "C0",
+      "type": "timed",
+      "actuator": "PU1",
+      "events": [
+        {
+          "time": 0,
+          "value": 0.6
+        },
+        {
+          "time": 300,
+          "value": 1
+        },
+        {
+          "time": 600,
+          "value": 0.8
+        }
+      ],
+      "label": "Pump speed, timed"
+    },
+    {
+      "id": "C1",
+      "type": "conditional",
+      "sensor": "LT0",
+      "operator": "<",
+      "threshold": 1.2,
+      "actuator": "V0",
+      "value": 0.004,
+      "label": "Feed tank low opens inlet"
+    },
+    {
+      "id": "C2",
+      "type": "conditional",
+      "sensor": "LT0",
+      "operator": ">",
+      "threshold": 1.8,
+      "actuator": "V0",
+      "value": 0,
+      "label": "Feed tank high closes inlet"
+    },
+    {
+      "id": "C3",
+      "type": "conditional",
+      "sensor": "LT1",
+      "operator": ">",
+      "threshold": 1.7,
+      "actuator": "PU1",
+      "value": 0.4,
+      "label": "Tank 1 high slows pump"
+    },
+    {
+      "id": "C4",
+      "type": "conditional",
+      "sensor": "LT1",
+      "operator": ">",
+      "threshold": 1.9,
+      "actuator": "PU1",
+      "value": 0,
+      "label": "Tank 1 very high stops pump"
+    },
+    {
+      "id": "C5",
+      "type": "conditional",
+      "sensor": "LT0",
+      "operator": "<",
+      "threshold": 0.2,
+      "actuator": "PU1",
+      "value": 0,
+      "label": "Feed tank empty stops pump"
+    }
+  ],
+  "attacks": [
+    {
+      "id": "A1",
+      "type": "chemical_interference",
+      "node": "T3",
+      "substance": "acid",
+      "amount": 1.5,
+      "start": 180,
+      "label": "Acid into tank 3"
+    },
+    {
+      "id": "A2",
+      "type": "data_poisoning",
+      "sensor": "LT0",
+      "mode": "constant",
+      "value": 1.9,
+      "start": 200,
+      "duration": 300,
+      "label": "Feed level reads high"
+    },
+    {
+      "id": "A3",
+      "type": "data_poisoning",
+      "sensor": "LT1",
+      "mode": "constant",
+      "value": 0.4,
+      "start": 400,
+      "duration": 400,
+      "label": "Tank 1 level reads low"
+    },
+    {
+      "id": "A4",
+      "type": "valve_stuck",
+      "valve": "V0",
+      "start": 450,
+      "duration": 200,
+      "label": "Inlet valve jams"
+    },
+    {
+      "id": "A5",
+      "type": "chemical_interference",
+      "node": "T2",
+      "substance": "sulfite",
+      "amount": 6,
+      "start": 600,
+      "label": "Oxygen scavenger into tank 2"
+    },
+    {
+      "id": "A6",
+      "type": "pump_failure",
+      "pump": "PU1",
+      "start": 820,
+      "label": "Pump fails"
+    }
+  ],
+  "simulation": {
+    "duration": 900,
+    "timeStep": 1,
+    "reportStep": 5,
+    "ambientTemperature": 20,
+    "seed": 1
+  },
+  "quality": {
+    "temperature": 20,
+    "chlorine": 0.5,
+    "ph": 7.5,
+    "alkalinity": 100
+  },
+  "chemistry": {}
+}

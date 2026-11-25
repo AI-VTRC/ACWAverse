@@ -18,11 +18,11 @@ https://AI-VTRC.github.io/ACWAverse/. To run it from source:
 ```
 npm install
 npm test          # compile the engine and run the 105 tests
-npm run build     # build the web application into site/
+npm run build     # build the web application into docs/
 npm run serve     # http://localhost:8080
 ```
 
-`site/acwaverse.html` is the whole application in one file; it can be opened
+`docs/acwaverse.html` is the whole application in one file; it can be opened
 straight from disk.
 
 ## The model
@@ -212,11 +212,10 @@ The four layers of the paper, and where each lives:
 
 ## Deployment
 
-`.github/workflows/deploy-pages.yml` publishes the application to GitHub
-Pages. On every push to `main`, and when it is started by hand from the
-Actions tab, it installs the dependencies, runs the tests, builds `site/` and
-deploys that folder. In the repository settings, Pages must have GitHub
-Actions as its source.
+GitHub Pages serves the `docs/` folder of the `main` branch. `npm run build`
+writes the application into that folder, so a change reaches the site when the
+rebuilt `docs/` is committed with it and lands on `main`. The empty
+`docs/.nojekyll` file tells Pages to publish the files as they are.
 
 ## Citation
 

@@ -1,0 +1,460 @@
+{
+  "format": "acwaverse/2",
+  "name": "ACWA testbed, star layout",
+  "description": "The ACWA laboratory testbed arranged as a star: a supply tank and pump fill a central hub tank, and two distribution pumps send water out from the hub to two outer tanks. Data poisoning falsifies three level readings in different ways, physical damage jams the inlet valve and fails a distribution pump, and chemical interference adds acid and an oxygen scavenger.",
+  "nodes": [
+    {
+      "id": "SRC",
+      "type": "reservoir",
+      "x": 60,
+      "y": 320,
+      "head": 6,
+      "label": "Supply"
+    },
+    {
+      "id": "J0",
+      "type": "junction",
+      "x": 180,
+      "y": 320,
+      "elevation": 0
+    },
+    {
+      "id": "RES",
+      "type": "tank",
+      "x": 330,
+      "y": 320,
+      "elevation": 0,
+      "shape": "box",
+      "width": 2,
+      "length": 1.5,
+      "height": 2.5,
+      "level": 1.8,
+      "whenFull": "spill",
+      "label": "Supply tank"
+    },
+    {
+      "id": "J1",
+      "type": "junction",
+      "x": 590,
+      "y": 320,
+      "elevation": 0
+    },
+    {
+      "id": "HUB",
+      "type": "tank",
+      "x": 730,
+      "y": 320,
+      "elevation": 0,
+      "shape": "box",
+      "width": 1.5,
+      "length": 1.5,
+      "height": 2.5,
+      "level": 1.2,
+      "whenFull": "spill",
+      "label": "Hub tank"
+    },
+    {
+      "id": "JA1",
+      "type": "junction",
+      "x": 910,
+      "y": 160,
+      "elevation": 0
+    },
+    {
+      "id": "JB1",
+      "type": "junction",
+      "x": 1040,
+      "y": 160,
+      "elevation": 0
+    },
+    {
+      "id": "OT1",
+      "type": "tank",
+      "x": 1160,
+      "y": 160,
+      "elevation": 0,
+      "shape": "box",
+      "width": 1,
+      "length": 1,
+      "height": 2,
+      "level": 0.5,
+      "whenFull": "spill",
+      "label": "Outer tank 1"
+    },
+    {
+      "id": "JA2",
+      "type": "junction",
+      "x": 910,
+      "y": 480,
+      "elevation": 0
+    },
+    {
+      "id": "JB2",
+      "type": "junction",
+      "x": 1040,
+      "y": 480,
+      "elevation": 0
+    },
+    {
+      "id": "OT2",
+      "type": "tank",
+      "x": 1160,
+      "y": 480,
+      "elevation": 0,
+      "shape": "box",
+      "width": 1,
+      "length": 1,
+      "height": 2,
+      "level": 0.5,
+      "whenFull": "spill",
+      "label": "Outer tank 2"
+    }
+  ],
+  "links": [
+    {
+      "id": "P0",
+      "type": "pipe",
+      "from": "SRC",
+      "to": "J0",
+      "length": 3,
+      "diameter": 0.08,
+      "friction": "hazen-williams",
+      "roughness": 130
+    },
+    {
+      "id": "V0",
+      "type": "valve",
+      "from": "J0",
+      "to": "RES",
+      "kind": "ball",
+      "diameter": 0.08,
+      "mode": "flow",
+      "setting": 0.008,
+      "strokeTime": 5,
+      "label": "Inlet valve"
+    },
+    {
+      "id": "PU1",
+      "type": "pump",
+      "from": "RES",
+      "to": "J1",
+      "shutoffHead": 10,
+      "maxFlow": 0.012,
+      "speed": 0.85,
+      "efficiency": 0.65,
+      "rampTime": 3,
+      "label": "Supply pump"
+    },
+    {
+      "id": "P1",
+      "type": "pipe",
+      "from": "J1",
+      "to": "HUB",
+      "length": 3,
+      "diameter": 0.08,
+      "friction": "hazen-williams",
+      "roughness": 130
+    },
+    {
+      "id": "PU2",
+      "type": "pump",
+      "from": "HUB",
+      "to": "JA1",
+      "shutoffHead": 10,
+      "maxFlow": 0.006,
+      "speed": 0.8,
+      "efficiency": 0.6,
+      "rampTime": 2,
+      "label": "Distribution pump 1"
+    },
+    {
+      "id": "V1",
+      "type": "valve",
+      "from": "JA1",
+      "to": "JB1",
+      "kind": "ball",
+      "diameter": 0.05,
+      "mode": "position",
+      "setting": 1,
+      "strokeTime": 5,
+      "label": "Distribution valve 1"
+    },
+    {
+      "id": "P3",
+      "type": "pipe",
+      "from": "JB1",
+      "to": "OT1",
+      "length": 3,
+      "diameter": 0.05,
+      "friction": "hazen-williams",
+      "roughness": 130
+    },
+    {
+      "id": "PU3",
+      "type": "pump",
+      "from": "HUB",
+      "to": "JA2",
+      "shutoffHead": 10,
+      "maxFlow": 0.006,
+      "speed": 0.8,
+      "efficiency": 0.6,
+      "rampTime": 2,
+      "label": "Distribution pump 2"
+    },
+    {
+      "id": "V2",
+      "type": "valve",
+      "from": "JA2",
+      "to": "JB2",
+      "kind": "ball",
+      "diameter": 0.05,
+      "mode": "position",
+      "setting": 1,
+      "strokeTime": 5,
+      "label": "Distribution valve 2"
+    },
+    {
+      "id": "P4",
+      "type": "pipe",
+      "from": "JB2",
+      "to": "OT2",
+      "length": 3,
+      "diameter": 0.05,
+      "friction": "hazen-williams",
+      "roughness": 130
+    }
+  ],
+  "sensors": [
+    {
+      "id": "LT0",
+      "element": "RES",
+      "quantity": "level",
+      "label": "Supply tank level",
+      "noise": 0.002
+    },
+    {
+      "id": "LT1",
+      "element": "HUB",
+      "quantity": "level",
+      "label": "Hub level",
+      "noise": 0.002
+    },
+    {
+      "id": "LT2",
+      "element": "OT1",
+      "quantity": "level",
+      "label": "Outer tank 1 level",
+      "noise": 0.002
+    },
+    {
+      "id": "LT3",
+      "element": "OT2",
+      "quantity": "level",
+      "label": "Outer tank 2 level",
+      "noise": 0.002
+    },
+    {
+      "id": "FT0",
+      "element": "V0",
+      "quantity": "flow",
+      "label": "Inlet flow",
+      "noise": 0.00002
+    },
+    {
+      "id": "FT1",
+      "element": "PU1",
+      "quantity": "flow",
+      "label": "Supply pump flow",
+      "noise": 0.00002
+    },
+    {
+      "id": "FT2",
+      "element": "PU2",
+      "quantity": "flow",
+      "label": "Distribution pump 1 flow",
+      "noise": 0.00002
+    },
+    {
+      "id": "FT3",
+      "element": "PU3",
+      "quantity": "flow",
+      "label": "Distribution pump 2 flow",
+      "noise": 0.00002
+    },
+    {
+      "id": "AT1",
+      "element": "HUB",
+      "quantity": "ph",
+      "label": "Hub pH",
+      "noise": 0.01
+    },
+    {
+      "id": "AT2",
+      "element": "RES",
+      "quantity": "oxygen",
+      "label": "Supply tank dissolved oxygen",
+      "noise": 0.02
+    }
+  ],
+  "controllers": [
+    {
+      "id": "C1",
+      "type": "conditional",
+      "sensor": "LT0",
+      "operator": "<",
+      "threshold": 1.5,
+      "actuator": "V0",
+      "value": 0.008,
+      "label": "Supply tank low opens inlet"
+    },
+    {
+      "id": "C2",
+      "type": "conditional",
+      "sensor": "LT0",
+      "operator": ">",
+      "threshold": 2.3,
+      "actuator": "V0",
+      "value": 0,
+      "label": "Supply tank high closes inlet"
+    },
+    {
+      "id": "C3",
+      "type": "conditional",
+      "sensor": "LT0",
+      "operator": "<",
+      "threshold": 0.3,
+      "actuator": "PU1",
+      "value": 0,
+      "label": "Supply tank empty stops supply pump"
+    },
+    {
+      "id": "C4",
+      "type": "onoff",
+      "sensor": "LT1",
+      "actuator": "PU1",
+      "action": "fill",
+      "low": 1.8,
+      "high": 2.3,
+      "onValue": 0.85,
+      "label": "Hub level runs supply pump"
+    },
+    {
+      "id": "C5",
+      "type": "conditional",
+      "sensor": "LT1",
+      "operator": "<",
+      "threshold": 0.3,
+      "actuator": "PU2",
+      "value": 0,
+      "label": "Hub empty stops distribution pump 1"
+    },
+    {
+      "id": "C6",
+      "type": "conditional",
+      "sensor": "LT1",
+      "operator": "<",
+      "threshold": 0.3,
+      "actuator": "PU3",
+      "value": 0,
+      "label": "Hub empty stops distribution pump 2"
+    },
+    {
+      "id": "C7",
+      "type": "onoff",
+      "sensor": "LT2",
+      "actuator": "V1",
+      "action": "fill",
+      "low": 1.6,
+      "high": 1.8,
+      "label": "Outer tank 1 level closes its valve"
+    },
+    {
+      "id": "C8",
+      "type": "onoff",
+      "sensor": "LT3",
+      "actuator": "V2",
+      "action": "fill",
+      "low": 1.6,
+      "high": 1.8,
+      "label": "Outer tank 2 level closes its valve"
+    }
+  ],
+  "attacks": [
+    {
+      "id": "A1",
+      "type": "chemical_interference",
+      "node": "RES",
+      "substance": "sulfite",
+      "amount": 20,
+      "start": 180,
+      "label": "Oxygen scavenger into supply tank"
+    },
+    {
+      "id": "A2",
+      "type": "data_poisoning",
+      "sensor": "LT2",
+      "mode": "constant",
+      "value": 0.6,
+      "start": 200,
+      "duration": 600,
+      "label": "Outer tank 1 level reads low"
+    },
+    {
+      "id": "A3",
+      "type": "data_poisoning",
+      "sensor": "LT3",
+      "mode": "freeze",
+      "start": 200,
+      "duration": 600,
+      "label": "Outer tank 2 level frozen"
+    },
+    {
+      "id": "A4",
+      "type": "valve_stuck",
+      "valve": "V0",
+      "start": 350,
+      "duration": 250,
+      "label": "Inlet valve jams"
+    },
+    {
+      "id": "A5",
+      "type": "data_poisoning",
+      "sensor": "LT1",
+      "mode": "offset",
+      "value": -0.8,
+      "start": 400,
+      "duration": 300,
+      "label": "Hub level reads 0.8 m low"
+    },
+    {
+      "id": "A6",
+      "type": "chemical_interference",
+      "node": "HUB",
+      "substance": "acid",
+      "amount": 1.5,
+      "start": 450,
+      "label": "Acid into hub tank"
+    },
+    {
+      "id": "A7",
+      "type": "pump_failure",
+      "pump": "PU3",
+      "start": 700,
+      "label": "Distribution pump 2 fails"
+    }
+  ],
+  "simulation": {
+    "duration": 900,
+    "timeStep": 1,
+    "reportStep": 5,
+    "ambientTemperature": 20,
+    "seed": 1
+  },
+  "quality": {
+    "temperature": 20,
+    "chlorine": 0.5,
+    "ph": 7.5,
+    "alkalinity": 100
+  },
+  "chemistry": {}
+}

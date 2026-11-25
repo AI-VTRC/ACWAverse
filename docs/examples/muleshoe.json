@@ -1,0 +1,358 @@
+{
+  "format": "acwaverse/2",
+  "name": "Muleshoe water system",
+  "description": "A small-town groundwater system of the kind attacked in Muleshoe, Texas in January 2024: wells fill two ground storage tanks, three booster pumps lift water to an elevated tower, and the tower supplies the town. Four hours in, a data poisoning attack makes the tower level read low, so the level control keeps the boosters running and the tower overflows. In the afternoon the duty booster fails (physical damage). Dimensions are representative, not surveyed.",
+  "nodes": [
+    {
+      "id": "WELLS",
+      "type": "reservoir",
+      "x": 60,
+      "y": 320,
+      "head": 12,
+      "label": "Well field",
+      "quality": {
+        "chlorine": 1.2
+      }
+    },
+    {
+      "id": "J1",
+      "type": "junction",
+      "x": 210,
+      "y": 320,
+      "elevation": 0,
+      "label": "Well header"
+    },
+    {
+      "id": "GST1",
+      "type": "tank",
+      "x": 370,
+      "y": 180,
+      "elevation": 0,
+      "shape": "cylinder",
+      "diameter": 18,
+      "height": 7.5,
+      "level": 5,
+      "whenFull": "closeInlet",
+      "label": "Ground tank 1"
+    },
+    {
+      "id": "GST2",
+      "type": "tank",
+      "x": 370,
+      "y": 460,
+      "elevation": 0,
+      "shape": "cylinder",
+      "diameter": 18,
+      "height": 7.5,
+      "level": 4.5,
+      "whenFull": "closeInlet",
+      "label": "Ground tank 2"
+    },
+    {
+      "id": "SUCTION",
+      "type": "junction",
+      "x": 530,
+      "y": 320,
+      "elevation": 0,
+      "label": "Suction header"
+    },
+    {
+      "id": "DISCHARGE",
+      "type": "junction",
+      "x": 770,
+      "y": 320,
+      "elevation": 0,
+      "label": "Discharge header"
+    },
+    {
+      "id": "TOWER",
+      "type": "tank",
+      "x": 930,
+      "y": 150,
+      "elevation": 40,
+      "shape": "cylinder",
+      "diameter": 12,
+      "height": 9,
+      "level": 6,
+      "whenFull": "spill",
+      "label": "Water tower"
+    },
+    {
+      "id": "TOWN",
+      "type": "junction",
+      "x": 1090,
+      "y": 320,
+      "elevation": 5,
+      "demand": 0.03,
+      "pattern": [
+        0.55,
+        0.5,
+        0.45,
+        0.45,
+        0.55,
+        0.8,
+        1.2,
+        1.5,
+        1.45,
+        1.3,
+        1.2,
+        1.15,
+        1.15,
+        1.1,
+        1.05,
+        1.1,
+        1.2,
+        1.4,
+        1.5,
+        1.4,
+        1.2,
+        1,
+        0.8,
+        0.65
+      ],
+      "patternStep": 3600,
+      "requiredPressure": 14,
+      "label": "Town"
+    }
+  ],
+  "links": [
+    {
+      "id": "P1",
+      "type": "pipe",
+      "from": "WELLS",
+      "to": "J1",
+      "length": 600,
+      "diameter": 0.2,
+      "friction": "hazen-williams",
+      "roughness": 130,
+      "label": "Well main"
+    },
+    {
+      "id": "P2",
+      "type": "pipe",
+      "from": "J1",
+      "to": "GST1",
+      "length": 60,
+      "diameter": 0.2,
+      "friction": "hazen-williams",
+      "roughness": 130
+    },
+    {
+      "id": "P3",
+      "type": "pipe",
+      "from": "J1",
+      "to": "GST2",
+      "length": 60,
+      "diameter": 0.2,
+      "friction": "hazen-williams",
+      "roughness": 130
+    },
+    {
+      "id": "P4",
+      "type": "pipe",
+      "from": "GST1",
+      "to": "SUCTION",
+      "length": 40,
+      "diameter": 0.3,
+      "friction": "hazen-williams",
+      "roughness": 130
+    },
+    {
+      "id": "P5",
+      "type": "pipe",
+      "from": "GST2",
+      "to": "SUCTION",
+      "length": 40,
+      "diameter": 0.3,
+      "friction": "hazen-williams",
+      "roughness": 130
+    },
+    {
+      "id": "PU1",
+      "type": "pump",
+      "from": "SUCTION",
+      "to": "DISCHARGE",
+      "shutoffHead": 62,
+      "maxFlow": 0.04,
+      "speed": 0,
+      "efficiency": 0.74,
+      "rampTime": 10,
+      "label": "North booster"
+    },
+    {
+      "id": "PU2",
+      "type": "pump",
+      "from": "SUCTION",
+      "to": "DISCHARGE",
+      "shutoffHead": 62,
+      "maxFlow": 0.055,
+      "speed": 1,
+      "efficiency": 0.78,
+      "rampTime": 10,
+      "label": "Middle booster"
+    },
+    {
+      "id": "PU3",
+      "type": "pump",
+      "from": "SUCTION",
+      "to": "DISCHARGE",
+      "shutoffHead": 62,
+      "maxFlow": 0.045,
+      "speed": 0,
+      "efficiency": 0.75,
+      "rampTime": 10,
+      "label": "South booster"
+    },
+    {
+      "id": "P6",
+      "type": "pipe",
+      "from": "DISCHARGE",
+      "to": "TOWER",
+      "length": 1500,
+      "diameter": 0.3,
+      "friction": "hazen-williams",
+      "roughness": 130,
+      "label": "Rising main"
+    },
+    {
+      "id": "P7",
+      "type": "pipe",
+      "from": "TOWER",
+      "to": "TOWN",
+      "length": 800,
+      "diameter": 0.3,
+      "friction": "hazen-williams",
+      "roughness": 130,
+      "label": "Town main"
+    }
+  ],
+  "sensors": [
+    {
+      "id": "LT1",
+      "element": "TOWER",
+      "quantity": "level",
+      "label": "Tower level",
+      "noise": 0.01
+    },
+    {
+      "id": "LT2",
+      "element": "GST1",
+      "quantity": "level",
+      "label": "Ground tank 1 level",
+      "noise": 0.01
+    },
+    {
+      "id": "LT3",
+      "element": "GST2",
+      "quantity": "level",
+      "label": "Ground tank 2 level",
+      "noise": 0.01
+    },
+    {
+      "id": "FT1",
+      "element": "P6",
+      "quantity": "flow",
+      "label": "Rising main flow",
+      "noise": 0.0003
+    },
+    {
+      "id": "PT1",
+      "element": "DISCHARGE",
+      "quantity": "pressure",
+      "label": "Booster discharge pressure",
+      "noise": 0.1
+    },
+    {
+      "id": "PT2",
+      "element": "TOWN",
+      "quantity": "pressure",
+      "label": "Town pressure",
+      "noise": 0.1
+    },
+    {
+      "id": "AT1",
+      "element": "TOWN",
+      "quantity": "chlorine",
+      "label": "Town chlorine",
+      "noise": 0.005
+    }
+  ],
+  "controllers": [
+    {
+      "id": "C1",
+      "type": "onoff",
+      "sensor": "LT1",
+      "actuator": "PU2",
+      "action": "fill",
+      "low": 5,
+      "high": 8,
+      "label": "Duty booster on tower level"
+    },
+    {
+      "id": "C2",
+      "type": "onoff",
+      "sensor": "LT1",
+      "actuator": "PU1",
+      "action": "fill",
+      "low": 3.5,
+      "high": 7,
+      "label": "Assist booster on tower level"
+    },
+    {
+      "id": "C3",
+      "type": "conditional",
+      "sensor": "LT2",
+      "operator": "<",
+      "threshold": 0.5,
+      "actuator": "PU2",
+      "value": 0,
+      "label": "Low suction stops duty booster"
+    },
+    {
+      "id": "C4",
+      "type": "conditional",
+      "sensor": "LT2",
+      "operator": "<",
+      "threshold": 0.5,
+      "actuator": "PU1",
+      "value": 0,
+      "label": "Low suction stops assist booster"
+    }
+  ],
+  "attacks": [
+    {
+      "id": "A1",
+      "type": "data_poisoning",
+      "sensor": "LT1",
+      "mode": "constant",
+      "value": 3,
+      "start": 14400,
+      "duration": 7200,
+      "label": "Tower level reads low"
+    },
+    {
+      "id": "A2",
+      "type": "pump_failure",
+      "pump": "PU2",
+      "start": 50400,
+      "duration": 10800,
+      "label": "Duty booster fails"
+    }
+  ],
+  "simulation": {
+    "duration": 86400,
+    "timeStep": 30,
+    "reportStep": 300,
+    "ambientTemperature": 18,
+    "seed": 1
+  },
+  "quality": {
+    "temperature": 17,
+    "chlorine": 0.8,
+    "ph": 7.6,
+    "alkalinity": 180
+  },
+  "chemistry": {
+    "chlorineBulkDecay": 0.5
+  }
+}
